@@ -82,6 +82,7 @@ rhel_iso_version: "rhel92"
 
 # rhel_iso_sha_value: The SHA256 checksum of the RHEL ISO for integrity verification
 rhel_iso_sha_value: a18bf014e2cb5b6b9cee3ea09ccfd7bc2a84e68e09487bb119a98aa0e3563ac2
+```
 
 ## Repository Structure
 
