@@ -85,7 +85,7 @@ rhel_iso_sha_value: a18bf014e2cb5b6b9cee3ea09ccfd7bc2a84e68e09487bb119a98aa0e356
 ```
 
 ## Repository Structure
-
+```bash
 │
 ├── playbooks/
 │   ├── download_iso.yaml         # Playbook to download the RHEL ISO
@@ -95,4 +95,4 @@ rhel_iso_sha_value: a18bf014e2cb5b6b9cee3ea09ccfd7bc2a84e68e09487bb119a98aa0e356
 │   └── download_iso_vars.yaml    # Variables for ISO download and authentication
 │
 └── README.md                     # Documentation on how to use the repository
-
+```
