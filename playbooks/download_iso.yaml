@@ -1,0 +1,94 @@
+---
+- name: Download standard RHEL ISO
+  hosts:
+    - edge_development
+    - edge_remote_management
+  vars:
+    image_builder_http_port: 18080
+    ansible_become_timeout: 120
+    apache_user: apache
+  become: true
+  tasks:
+    - name: Create directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - /var/www/html/mnt/{{ rhel_iso_version }}
+        - /var/www/html/iso/
+
+    - name: Set the correct ownership
+      file:
+        path: "/var/www/html/mnt/{{ rhel_iso_version }}"
+        owner: "{{ apache_user }}"
+        group: "{{ apache_user }}"
+        recurse: yes
+
+    - name: Restore context on directory
+      ansible.builtin.command: "restorecon -R /var/www/html/"
+      changed_when: true
+
+    - name: Download standard RHEL ISO
+      when:
+        - rhel_iso_sha_value is defined
+      block:
+        - name: Generating an access token
+          uri:
+            url: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+            method: POST
+            body_format: form-urlencoded
+            return_content: true
+            body:
+              grant_type: "refresh_token"
+              client_id: "rhsm-api"
+              refresh_token: "{{ offline_token }}"
+          register: temp_token
+          until: temp_token is not failed
+          retries: 15
+          delay: 20
+        - name: show token
+          debug:
+            msg: "{{ temp_token.json.access_token }}"
+
+        - name: Download RHEL ISO
+          get_url:
+            url: "https://api.access.redhat.com/management/v1/images/{{ rhel_iso_sha_value }}/download"
+            headers:
+              accept: "application/json"
+              Authorization: "Bearer {{ temp_token.json.access_token }}"
+            dest: "/var/www/html/iso/{{ rhel_iso_version }}.iso"
+            #dest: "/var/www/html/iso/rhel95.iso"
+            checksum: "sha256: {{ rhel_iso_sha_value }}"
+            timeout: 300
+          register: download_rhel_iso
+          until: download_rhel_iso is not failed
+          retries: 15
+
+        - name: Set the correct ownership
+          file:
+            path: "/var/www/html/iso/{{ rhel_iso_version }}.iso"
+            owner: "{{ apache_user }}"
+            group: "{{ apache_user }}"
+
+        - name: Restore context on directory
+          ansible.builtin.command: "restorecon -R /var/www/html/"
+          changed_when: true
+
+        - name: mount boot iso
+          ansible.posix.mount:
+            path: "/var/www/html/mnt/{{ rhel_iso_version }}"
+            src: "/var/www/html/iso/{{ rhel_iso_version }}.iso"
+            fstype: iso9660
+            opts: loop
+            state: ephemeral
+          become: true
+
+        - name: Copy ISO contents to apache directory
+          shell: cp -avRf /var/www/html/mnt/{{ rhel_iso_version }}  /var/www/html/{{ rhel_iso_version }}
+
+        - name: Ensure correct permissions on grub.cfg
+          file:
+            path: /var/www/html/{{ rhel_iso_version }}/EFI/BOOT/grub.cfg
+            mode: '0644'
+...
+

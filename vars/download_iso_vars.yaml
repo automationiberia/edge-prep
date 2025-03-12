@@ -1,0 +1,8 @@
+# Generate offline token to authenticate the calls to Red Hat's APIs
+# Can be accessed at https://access.redhat.com/management/api
+offline_token: ''
+
+rhel_iso_version: "rhel84"
+# https://access.redhat.com/downloads/content/479/ver=/rhel---8/8.4/x86_64/product-software
+rhel_iso_sha_value: cd87fc4c5014c9af97246fb93ade8b9e1bba1411c73afd28ce23e171e66896e3 ## Red Hat Enterprise Linux 8.4 Boot ISO
+

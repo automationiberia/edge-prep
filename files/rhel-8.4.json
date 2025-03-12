@@ -1,0 +1,16 @@
+{
+  "x86_64": [
+    {
+      "name": "baseos",
+      "baseurl": "http://192.168.30.1/mnt/rhel84/BaseOS",
+      "rhsm": false,
+      "check_gpg": false
+    },
+    {
+      "name": "appstream",
+      "baseurl": "http://192.168.30.1/mnt/rhel84/AppStream",
+      "rhsm": false,
+      "check_gpg": false
+    }
+  ]
+}

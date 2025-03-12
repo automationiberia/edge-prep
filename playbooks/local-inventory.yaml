@@ -1,0 +1,10 @@
+all:
+  children:
+    local:
+      children:
+        edge_development:
+          hosts:
+            rhde-int.bcnconsulting.com:
+              ansible_host: 192.168.122.83
+              ansible_user: pgoku
+              ansible_connection: local

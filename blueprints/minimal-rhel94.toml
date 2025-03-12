@@ -1,0 +1,4 @@
+name = "minimal-rhel94"
+description = "RHEL 9"
+version = "0.0.1"
+distro = "rhel-9.4"

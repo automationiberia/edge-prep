@@ -1,0 +1,13 @@
+[Inter-rhel92-BaseOS]
+name=BaseOS Packages Red Hat Enterprise Linux 9
+baseurl=http://192.168.30.1/mnt/rhel92/BaseOS
+enabled=1
+gpgcheck=0
+# gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+
+[Inter-rhel92-AppStream]
+name=AppStream Packages Red Hat Enterprise Linux 9
+baseurl=http://192.168.30.1/mnt/rhel92/AppStream
+enabled=1
+gpgcheck=0
+# gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
