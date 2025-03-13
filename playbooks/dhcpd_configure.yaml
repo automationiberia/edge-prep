@@ -1,0 +1,23 @@
+---
+- name: Manage DHCP reservations using template
+  hosts: dhcp_servers
+  become: yes
+  tasks:
+    - name: Ensure the DHCP configuration directory exists
+      file:
+        path: /etc/dhcp
+        state: directory
+        mode: '0755'
+
+    - name: Generate the DHCP server configuration file from template
+      template:
+        src: templates/dhcpd.conf.j2
+        dest: /etc/dhcp/dhcpd.conf
+        mode: '0644'
+
+    - name: Restart DHCP service to apply changes
+      systemd:
+        name: dhcpd
+        state: restarted
+        enabled: yes
+...

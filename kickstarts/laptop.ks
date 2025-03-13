@@ -10,55 +10,45 @@ graphical
 user --name=ansible --groups=wheel --password='redhat00'
 rootpw --plaintext --lock 'redhat00'
 services --enabled=ostree-remount
+# ostreesetup --nogpg --url=http://192.168.40.1:8080/ostree-repos/type1/repo --osname=rhel --ref=rhel/9/x86_64/edge
 ostreesetup --nogpg --url=http://192.168.40.1:8080/repo --osname=rhel --ref=rhel/8/x86_64/edge
 
-%post --log=/root/kickstart-post.log
+%post --nochroot --log=/mnt/sysroot/root/kickstart-post-nonchroot.log
 set -x
 
-# Set a fixed IP configuration using DHCP-derived information
-# Fetch the connection name and current IP address
-conn_name=$(nmcli con show | grep -v UUID | head -n 1 | awk '{print $1}')
-IP_ADDRESS=$(nmcli conn show $conn_name | grep ip_address | awk '{print $4}')
-dhcp_hostname=$(nmcli con show $conn_name | grep -oP "^DHCP4.OPTION[^ ]*\s*host_name = \K.*")
+# Configure the new connections
+CON_NAME_1=$(nmcli -t -f NAME,TYPE con show | grep "ethernet" | awk -F':' 'NR==1 {print $1}')
+CON_NAME_2=$(nmcli -t -f connection,type dev | grep ethernet | awk -F':' 'NR==2 {print $1}')
+DEV_NAME_1=$(nmcli -t -f device,type dev | grep ethernet | awk -F':' 'NR==1 {print $1}')
+DEV_NAME_2=$(nmcli -t -f device,type dev | grep ethernet | awk -F':' 'NR==2 {print $1}')
 
-# Display fetched information
-echo "Connection Name: $conn_name"
-echo "IP Address: $IP_ADDRESS"
-echo "dhcp_hostname: $dhcp_hostname"
+# Get current net configuration
+IP_ADDRESS1=$(nmcli con show "$CON_NAME_1" | grep -oP "^IP4.ADDRESS[^ ]*\s*\K.*")
+IP_ADDRESS2=192.168.50.1/24
+DHCP_HOSTNAME=$(nmcli con show "$CON_NAME_1" | grep -oP "^DHCP4.OPTION[^ ]*\s*host_name = \K.*")
 
-echo "$IP_ADDRESS $dhcp_hostname" >> /etc/hosts
-echo "192.168.40.1 rhde-dev9.bcnconsulting.com rhde-dev9" >> /etc/hosts
-echo "$dhcp_hostname" > /etc/hostname
+# Remove all the connections from nmcli
+nmcli -t -f name con show | while read connection; do nmcli con del "${connection}"; done
 
-mkdir -p /var/lib/dhcpd/
-touch /var/lib/dhcpd/dhcpd.leases
-restorecon -v /var/lib/dhcpd/dhcpd.leases
+# Add the new network configurations
+nmcli con add type ethernet save yes ifname ${DEV_NAME_1} con-name ${DEV_NAME_1} ipv4.addresses "${IP_ADDRESS1}" ipv4.gateway "" connection.autoconnect true ipv4.method manual
+nmcli con add type ethernet save yes ifname ${DEV_NAME_2} con-name ${DEV_NAME_2} ipv4.addresses "${IP_ADDRESS2}" ipv4.gateway "" connection.autoconnect true ipv4.method manual
 
-# Modify the connection to use a static IP
-nmcli con mod $conn_name ipv4.dns-search bcnconsulting.com
-nmcli con mod $conn_name ipv4.addresses $IP_ADDRESS
-nmcli con mod $conn_name ipv4.method manual
+# Copy the network configurations
+cp /etc/sysconfig/network-scripts/* /mnt/sysroot/etc/sysconfig/network-scripts/
 
-# Restart the network connection
+# Set the hostname and the host at /etc/hosts
+echo "${IP_ADDRESS1%/*} $DHCP_HOSTNAME" >> /mnt/sysroot/etc/hosts
+echo "192.168.40.1 rhde-dev9.bcnconsulting.com rhde-dev9" >> /mnt/sysroot/etc/hosts
+echo "$DHCP_HOSTNAME" > /mnt/sysroot/etc/hostname
 
-echo "DEBUG INFORMATION"
-lsblk
-df -h
-ip -br a
-nmcli -f name,filename connection show
-ip route
-echo "/ listing"; ls -l /
-echo "/var/ listing"; ls -l /var
-echo "/var/etc listing"; ls -l /var/etc
-echo "/var/etc/NetworkManager listing"; ls -l /var/etc/NetworkManager
-echo "/var/etc/NetworkManager/system-connections/ listing"; ls -l /var/etc/NetworkManager/system-connections/
-ls -l /usr
-ls -l /etc
-echo "DEBUG INFORMATION"
+# Create DHCP configuration
+mkdir -p /mnt/sysroot/var/lib/dhcpd/
+touch /mnt/sysroot/var/lib/dhcpd/dhcpd.leases
+restorecon -v /mnt/sysroot/var/lib/dhcpd/dhcpd.leases
 
-mkdir -p /etc/NetworkManager/system-connections/
-rm -f /etc/sysconfig/network-scripts/ifcfg-${conn_name}
-cp /run/NetworkManager/system-connections/default_connection.nmconnection /etc/NetworkManager/system-connections/${conn_name}.nmconnection
+# It works NetworkManager to version 1.39 or above - https://access.redhat.com/solutions/7055398
+# nmcli connection migrate; nmcli -f name,filename connection show
 
 ping -c 4 192.168.40.1
 
@@ -69,13 +59,15 @@ ping -c 4 192.168.40.1
 # mkdir -p /var/home/ansible/.config/systemd/user/timers.target.wants
 # mkdir -p /var/home/ansible/.config/systemd/user/multi-user.target.wants
 
-cat << EOF > /var/usrlocal/bin/pre-pull-container-image.sh
+cat << EOF > /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
 #!/bin/bash
+
 # List of container images to pull
 IMAGES=(
     "simple-http:prod"
-    "laptop-rhel84:1.0.2"
+    "laptop-rhel84:2.0.3"
 )
+
 # Server URL
 SERVER_URL="rhde-dev9.bcnconsulting.com:5000"
 
@@ -89,6 +81,7 @@ while true; do
         sleep 10
     fi
 done
+
 # Pull container images from the list
 for IMAGE in "\${IMAGES[@]}"; do
     retries=5
@@ -115,13 +108,14 @@ done
 echo "All images pulled successfully."
 EOF
 
-chmod +x /var/usrlocal/bin/pre-pull-container-image.sh
-restorecon -v /var/usrlocal/bin/pre-pull-container-image.sh
-chcon -t bin_t /var/usrlocal/bin/pre-pull-container-image.sh
-ls -Z /var/usrlocal/bin/pre-pull-container-image.sh
+chmod +x /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
+restorecon -v /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
+/mnt/sysroot/bin/chcon -t bin_t /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
+ls -Z /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
+
 
 # pre-pull the container images at startup to avoid delay in http response
-cat > /etc/systemd/system/pre-pull-container-image.service <<EOF
+cat > /mnt/sysroot/etc/systemd/system/pre-pull-container-image.service <<EOF
 [Unit]
 Description=Pre-pull container image service
 After=network-online.target
@@ -136,7 +130,23 @@ ExecStart=/var/usrlocal/bin/pre-pull-container-image.sh
 WantedBy=multi-user.target default.target
 EOF
 
-# enable pre-pull container image
-systemctl enable pre-pull-container-image.service
+
+# Download ISO from servidor Inter
+
+mkdir -p /mnt/sysroot/var/www/html/mnt/rhel84 /mnt/sysroot/var/www/html/iso
+curl -o /mnt/sysroot/var/www/html/iso/rhel84.iso http://192.168.40.1/iso/rhel84.iso
+mount -o loop,ro -t iso9660 /mnt/sysroot/var/www/html/iso/rhel84.iso /mnt/sysroot/var/www/html/mnt/rhel84/
+cp -avRf /mnt/sysroot/var/www/html/mnt/rhel84/images /mnt/sysroot/var/www/html/rhel84/
+cp -avRf /mnt/sysroot/var/www/html/mnt/rhel84/EFI /mnt/sysroot/var/www/html/rhel84/
+cp -avRf /mnt/sysroot/var/www/html/mnt/rhel84/isolinux /mnt/sysroot/var/www/html/rhel84/
+restorecon -v -R /mnt/sysroot/var/www/html/ > /dev/null 2>&1
+
+sync
 
 %end
+
+%post --log=/root/kickstart-post.log
+# enable pre-pull container image
+systemctl enable pre-pull-container-image.service
+#ln -s /mnt/sysroot/etc/systemd/system/pre-pull-container-image.service /mnt/sysroot/etc/systemd/system/multi-user.target.wants/pre-pull-container-image.service
+#ln -s /mnt/sysroot/etc/systemd/system/pre-pull-container-image.service /mnt/sysroot/etc/systemd/system/default.target.wants/pre-pull-container-image.service

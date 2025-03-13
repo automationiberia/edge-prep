@@ -1,0 +1,23 @@
+---
+subnet: "192.168.40.0"
+netmask: "255.255.255.0"
+interface: "eth1"
+routers: "192.168.40.1"
+dns_servers: "192.168.40.1"
+range_start: "192.168.40.100"
+range_end: "192.168.40.200"
+pxe_next_server: "192.168.40.1"
+pxe_architecture_type: "00:07"
+http_filename: "http://192.168.40.1/rhel84/EFI/BOOT/BOOTX64.EFI"
+
+# List of DHCP hosts
+dhcp_hosts:
+  - name: "laptop"
+    mac: "52:54:00:38:7a:f0"
+    ip: "192.168.40.2"
+    hostname: "laptop.bcnconsulting.com"
+  - name: "desktop"
+    mac: "52:54:00:38:7a:f1"
+    ip: "192.168.40.3"
+    hostname: "desktop.bcnconsulting.com"
+...

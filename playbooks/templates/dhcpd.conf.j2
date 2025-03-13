@@ -1,0 +1,36 @@
+# DHCP Server Configuration file.
+# See /usr/share/doc/dhcp-server/dhcpd.conf.example
+# See dhcpd.conf(5) man page
+
+option architecture-type code 93 = unsigned integer 16;
+
+subnet {{ subnet }} netmask {{ netmask }} {
+  interface {{ interface }};
+  option routers {{ routers }};
+  option domain-name-servers {{ dns_servers }};
+  range {{ range_start }} {{ range_end }};
+
+  {% for host in dhcp_hosts %}
+  host {{ host.name }} {
+    hardware ethernet {{ host.mac }};  # MAC address
+    fixed-address {{ host.ip }};       # IP address
+    option host-name "{{ host.hostname }}"; # Hostname
+  }
+  {% endfor %}
+
+  class "pxeclients" {
+    match if substring (option vendor-class-identifier, 0, 9) = "PXEClient";
+    next-server {{ pxe_next_server }};
+    if option architecture-type = 00:07 {
+      filename "redhat/EFI/BOOT/BOOTX64.EFI";
+    } else {
+      filename "pxelinux/pxelinux.0";
+    }
+  }
+
+  class "httpclients" {
+    match if substring (option vendor-class-identifier, 0, 10) = "HTTPClient";
+    option vendor-class-identifier "HTTPClient";
+    filename "{{ http_filename }}";
+  }
+}

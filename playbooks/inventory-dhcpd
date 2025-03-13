@@ -1,0 +1,2 @@
+[dhcp_servers]
+dhcp-server-01 ansible_connection=local
