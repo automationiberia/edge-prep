@@ -1,0 +1,69 @@
+---
+- name: "rhde gitops"
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Debug list
+      ansible.builtin.debug:
+        msg: "{{ item_debug_images.name.split('/') | last }}"
+      loop: "{{ images_copy_to_quay }}"
+      loop_control:
+        loop_var: item_debug_images
+      tags: [ never, debug ]
+
+    - name: Login to quay.io
+      containers.podman.podman_login:
+        registry: quay.io
+        username: "{{ vault_registry_username }}"
+        password: "{{ vault_registry_password }}"
+
+    - name: Pull images from a list
+      containers.podman.podman_image:
+        name: "{{ item_pull_images.name }}"
+        pull: true
+        tag: "{{ item_pull_images.tag }}"
+      loop: "{{ images_copy_to_quay }}"
+      loop_control:
+        loop_var: item_pull_images
+
+    - name: Tag Images from a list
+      containers.podman.podman_tag:
+        image: "{{ item_tag_images.name}}:{{ item_tag_images.tag }}"
+        target_names:
+          - "{{ quay_dest_account }}/{{ item_tag_images.name.split('/') | last }}:{{ item_tag_images.tag }}"
+      loop: "{{ images_copy_to_quay }}"
+      loop_control:
+        loop_var: item_tag_images
+
+    - name: Push images from a list
+      containers.podman.podman_image:
+        name: "{{ quay_dest_account }}/{{ item_push_images.name.split('/') | last }}:{{ item_push_images.tag }}"
+        push: true
+        push_args:
+          dest: "{{ quay_dest_account }}/{{ item_push_images.name.split('/') | last }}:{{ item_push_images.tag }}"
+      loop: "{{ images_copy_to_quay }}"
+      loop_control:
+        loop_var: item_push_images
+
+    - name: Delete local images from original list
+      containers.podman.podman_image:
+        name: "{{ item_delete_images.name }}"
+        tag: "{{ item_delete_images.tag }}"
+        state: absent
+      loop: "{{ images_copy_to_quay }}"
+      loop_control:
+        loop_var: item_delete_images
+
+    - name: Delete local images from dest list
+      containers.podman.podman_image:
+        name: "{{ quay_dest_account }}/{{ item_delete_images.name.split('/') | last }}"
+        tag: "{{ item_delete_images.tag }}"
+        state: absent
+      loop: "{{ images_copy_to_quay }}"
+      loop_control:
+        loop_var: item_delete_images
+
+    - name: Log out of default registry
+      containers.podman.podman_logout:
+        registry: quay.io
+...

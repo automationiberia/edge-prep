@@ -1,0 +1,18 @@
+vault_registry_username: quay.io-username-CHANGEME!
+vault_registry_password: quay.io-password-CHANGEME!
+images_copy_to_quay:
+  - name: quay.io/silvinux/2048
+    tag: v1
+  - name: quay.io/silvinux/2048
+    tag: v2
+  - name: quay.io/silvinux/2048
+    tag: v3
+  - name: quay.io/silvinux/2048
+    tag: prod
+  - name: quay.io/silvinux/simple-http
+    tag: v1
+  - name: quay.io/silvinux/simple-http
+    tag: v2
+  - name: quay.io/silvinux/simple-http
+    tag: prod
+quay_dest_account: "quay.io/automationiberia/ot2024"
