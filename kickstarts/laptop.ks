@@ -38,6 +38,7 @@ nmcli con add type ethernet save yes ifname ${DEV_NAME_2} con-name ${DEV_NAME_2}
 cp /etc/sysconfig/network-scripts/* /mnt/sysroot/etc/sysconfig/network-scripts/
 
 # Set the hostname and the host at /etc/hosts
+echo "${IP_ADDRESS2%/*} ${DHCP_HOSTNAME%%.*}-int.${DHCP_HOSTNAME#*.}" >> /mnt/sysroot/etc/hosts
 echo "${IP_ADDRESS1%/*} $DHCP_HOSTNAME" >> /mnt/sysroot/etc/hosts
 echo "192.168.40.1 rhde-dev9.bcnconsulting.com rhde-dev9" >> /mnt/sysroot/etc/hosts
 echo "$DHCP_HOSTNAME" > /mnt/sysroot/etc/hostname
@@ -52,20 +53,19 @@ restorecon -v /mnt/sysroot/var/lib/dhcpd/dhcpd.leases
 
 ping -c 4 192.168.40.1
 
-########## PODMAN autoupdate rootless
-# create systemd user directories for rootless services, timers, and sockets
-# mkdir -p /var/home/ansible/.config/systemd/user/default.target.wants
-# mkdir -p /var/home/ansible/.config/systemd/user/sockets.target.wants
-# mkdir -p /var/home/ansible/.config/systemd/user/timers.target.wants
-# mkdir -p /var/home/ansible/.config/systemd/user/multi-user.target.wants
+sync
 
-cat << EOF > /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
+%end
+
+%post --log=/root/kickstart-post.log
+
+cat << EOF > /var/usrlocal/bin/pre-pull-container-image.sh
 #!/bin/bash
 
 # List of container images to pull
 IMAGES=(
-    "simple-http:prod"
-    "laptop-rhel84:2.0.3"
+    "rhde-dev9.bcnconsulting.com:5000/image1-rhel84:1.0.1"
+    "library/registry:latest"
 )
 
 # Server URL
@@ -108,14 +108,14 @@ done
 echo "All images pulled successfully."
 EOF
 
-chmod +x /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
-restorecon -v /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
-/mnt/sysroot/bin/chcon -t bin_t /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
-ls -Z /mnt/sysroot/var/usrlocal/bin/pre-pull-container-image.sh
+chmod +x /var/usrlocal/bin/pre-pull-container-image.sh
+restorecon -v /var/usrlocal/bin/pre-pull-container-image.sh
+/bin/chcon -t bin_t /var/usrlocal/bin/pre-pull-container-image.sh
+ls -Z /var/usrlocal/bin/pre-pull-container-image.sh
 
 
-# pre-pull the container images at startup to avoid delay in http response
-cat > /mnt/sysroot/etc/systemd/system/pre-pull-container-image.service <<EOF
+# pre-pull the container images at startup
+cat > /etc/systemd/system/pre-pull-container-image.service <<EOF
 [Unit]
 Description=Pre-pull container image service
 After=network-online.target
@@ -130,23 +130,88 @@ ExecStart=/var/usrlocal/bin/pre-pull-container-image.sh
 WantedBy=multi-user.target default.target
 EOF
 
-
-# Download ISO from servidor Inter
-
-mkdir -p /mnt/sysroot/var/www/html/mnt/rhel84 /mnt/sysroot/var/www/html/iso
-curl -o /mnt/sysroot/var/www/html/iso/rhel84.iso http://192.168.40.1/iso/rhel84.iso
-mount -o loop,ro -t iso9660 /mnt/sysroot/var/www/html/iso/rhel84.iso /mnt/sysroot/var/www/html/mnt/rhel84/
-cp -avRf /mnt/sysroot/var/www/html/mnt/rhel84/images /mnt/sysroot/var/www/html/rhel84/
-cp -avRf /mnt/sysroot/var/www/html/mnt/rhel84/EFI /mnt/sysroot/var/www/html/rhel84/
-cp -avRf /mnt/sysroot/var/www/html/mnt/rhel84/isolinux /mnt/sysroot/var/www/html/rhel84/
-restorecon -v -R /mnt/sysroot/var/www/html/ > /dev/null 2>&1
-
-sync
-
-%end
-
-%post --log=/root/kickstart-post.log
 # enable pre-pull container image
 systemctl enable pre-pull-container-image.service
-#ln -s /mnt/sysroot/etc/systemd/system/pre-pull-container-image.service /mnt/sysroot/etc/systemd/system/multi-user.target.wants/pre-pull-container-image.service
-#ln -s /mnt/sysroot/etc/systemd/system/pre-pull-container-image.service /mnt/sysroot/etc/systemd/system/default.target.wants/pre-pull-container-image.service
+
+# systemd service to manage registry
+mkdir -p /opt/registry/data
+chcon -R -t container_file_t /opt/registry/data
+cat > /etc/systemd/system/container-registry.service <<EOF
+# container-registry.service
+
+[Unit]
+Description=Podman container-registry.service
+Documentation=man:podman-generate-systemd(1)
+Wants=network.target
+After=network-online.target pre-pull-container-image.service
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/container-registry.pid %t/container-registry.ctr-id
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/container-registry.pid --cidfile %t/container-registry.ctr-id --cgroups=no-conmon --replace --name container-registry -dit -p 5000:5000 -v /opt/registry/data:/var/lib/registry rhde-dev9.bcnconsulting.com:5000/library/registry
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/container-registry.ctr-id -t 10
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/container-registry.ctr-id
+PIDFile=%t/container-registry.pid
+Type=forking
+
+[Install]
+WantedBy=multi-user.target default.target
+EOF
+
+# Enable the service
+systemctl enable container-registry.service
+
+cat > /etc/systemd/system/container-image1-rhel84.service <<EOF
+# container-image1-rhel84.service
+
+[Unit]
+Description=Podman container-image1-rhel84.service
+Documentation=man:podman-generate-systemd(1)
+Wants=network.target
+After=network-online.target pre-pull-container-image.service container-registry.service
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/container-image1-rhel84.pid %t/container-image1-rhel84.ctr-id
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/container-image1-rhel84.pid --cidfile %t/container-image1-rhel84.ctr-id --cgroups=no-conmon --replace -d --rm --name image1-rhel84 -p8080:8080 laptop-int.bcnconsulting.com:5000/image1-rhel84:1.0.1
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/container-image1-rhel84.ctr-id -t 10
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/container-image1-rhel84.ctr-id
+PIDFile=%t/container-image1-rhel84.pid
+Type=forking
+
+[Install]
+WantedBy=multi-user.target default.target
+EOF
+
+
+# Create Directory structure
+# Download Ansible Content
+curl -o /root/playbooks.tar.gz http://192.168.40.1/ansible-content/playbooks.tar.gz
+
+# Download ISO from servidor Inter
+mkdir -p /var/www/html/mnt/rhel84 /var/www/html/iso
+curl -o /var/www/html/iso/rhel84.iso http://192.168.40.1/iso/rhel84.iso
+mount -o loop,ro -t iso9660 /var/www/html/iso/rhel84.iso /var/www/html/mnt/rhel84/
+sleep 20
+
+# Copy images, EFI, isolinux only once
+rsync -av --progress /var/www/html/mnt/rhel84/EFI /var/www/html/rhel84/
+rsync -av --progress /var/www/html/mnt/rhel84/images /var/www/html/rhel84/
+rsync -av --progress /var/www/html/mnt/rhel84/isolinux /var/www/html/rhel84/
+
+# Download Customized Grub
+curl -o /var/www/html/rhel84/EFI/BOOT/grub.cfg http://192.168.40.1/rhel84/GRUBs/grub.cfg
+
+# Download kickstarts
+mkdir /var/www/html/kickstarts
+curl -o /var/www/html/kickstarts/device-image1.ks http://192.168.40.1/kickstarts/device-image1.ks
+curl -o /var/www/html/kickstarts/device-image2.ks http://192.168.40.1/kickstarts/device-image2.ks
+
+# Restore SELinux context
+restorecon -v -R /var/www/html/ > /dev/null 2>&1
+
+%end

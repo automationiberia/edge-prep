@@ -21,6 +21,7 @@ Run the following command to download the collection:
 
 ```bash
 $ ansible-galaxy collection download infra.osbuild -p collections-download
+$ ansible-galaxy collection download containers.podman -p collections-download
 ```
 
 ### Archive the Downloaded Collection
@@ -29,7 +30,7 @@ Once the collection is downloaded, create an archive:
 
 
 ```bash
-$ tar cvfz collections-infra-osbuild.tar.gz collections-download
+$ tar cvfz collections-ansible.tar.gz collections-download
 ```
 
 ### Transfer the Archive to the Target Node
@@ -37,7 +38,7 @@ $ tar cvfz collections-infra-osbuild.tar.gz collections-download
 Use `scp` to transfer the archive to the target system:
 
 ```bash
-$ scp collections-infra-osbuild.tar.gz rhde-destination-host:~/.
+$ scp collections-ansible.tar.gz rhde-destination-host:~/.
 ```
 
 ### Extract and Install the Collection

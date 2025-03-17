@@ -1,0 +1,96 @@
+---
+- name: "Upload Images to Podman Registry"
+  hosts: localhost
+  gather_facts: false
+  vars:
+    registry_url_origin: "rhde-dev9.bcnconsulting.com:5000"  # Source registry
+    registry_url_dest: "laptop-int.bcnconsulting.com:5000"  # Destination registry
+    registry_tls_verify: false
+    images_to_upload:
+      - name: "simple-http"
+        tag: "prod"
+      - name: "2048"
+        tag: "prod"
+      - name: "laptop-rhel84"
+        tag: "2.0.3"
+      - name: "image1-rhel84"
+        tag: "1.0.1"
+
+  tasks:
+    - name: Debug - List images to upload
+      ansible.builtin.debug:
+        msg: "Processing image {{ item.name }}:{{ item.tag }}"
+      loop: "{{ images_to_upload }}"
+      loop_control:
+        loop_var: item
+
+    - name: Login to origin registry (if credentials are provided)
+      containers.podman.podman_login:
+        registry: "{{ registry_url_origin }}"
+        username: "{{ registry_username }}"
+        password: "{{ registry_password }}"
+        validate_certs: "{{ registry_tls_verify }}"
+      when: registry_username is defined and registry_password is defined
+
+    - name: Pull images from the source registry
+      containers.podman.podman_image:
+        name: "{{ registry_url_origin }}/{{ item.name }}:{{ item.tag }}"
+        pull: true
+        validate_certs: "{{ registry_tls_verify }}"
+      loop: "{{ images_to_upload }}"
+      loop_control:
+        loop_var: item
+
+    - name: Tag images for the destination registry
+      containers.podman.podman_tag:
+        image: "{{ registry_url_origin }}/{{ item.name }}:{{ item.tag }}"
+        target_names:
+          - "{{ registry_url_dest }}/{{ item.name }}:{{ item.tag }}"   # Tag the image for the destination registry
+      loop: "{{ images_to_upload }}"
+      loop_control:
+        loop_var: item
+
+    - name: Login to destination registry (if credentials are provided)
+      containers.podman.podman_login:
+        registry: "{{ registry_url_dest }}"
+        username: "{{ registry_username }}"
+        password: "{{ registry_password }}"
+        validate_certs: "{{ registry_tls_verify }}"
+      when: registry_username is defined and registry_password is defined
+
+    - name: Push images to the destination registry
+      containers.podman.podman_image:
+        name: "{{ registry_url_dest }}/{{ item.name }}:{{ item.tag }}"  # Push to the destination registry
+        push: true
+        validate_certs: "{{ registry_tls_verify }}"
+      loop: "{{ images_to_upload }}"
+      loop_control:
+        loop_var: item
+
+    - name: Delete local images (original)
+      containers.podman.podman_image:
+        name: "{{ registry_url_origin }}/{{ item.name }}:{{ item.tag }}"
+        state: absent
+      loop: "{{ images_to_upload }}"
+      loop_control:
+        loop_var: item
+
+    - name: Delete local images (tagged for destination registry)
+      containers.podman.podman_image:
+        name: "{{ registry_url_dest }}/{{ item.name }}:{{ item.tag }}"
+        state: absent
+      loop: "{{ images_to_upload }}"
+      loop_control:
+        loop_var: item
+      when: delete_local_images is defined and delete_local_images
+
+    - name: Log out from the origin registry (if logged in)
+      containers.podman.podman_logout:
+        registry: "{{ registry_url_origin }}"
+      when: registry_username is defined and registry_password is defined
+
+    - name: Log out from the destination registry (if logged in)
+      containers.podman.podman_logout:
+        registry: "{{ registry_url_dest }}"
+      when: registry_username is defined and registry_password is defined
+...
