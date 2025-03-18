@@ -1,0 +1,92 @@
+" syntax highlighting
+" syntax enable
+
+let python_highlight_all=1
+syntax on
+
+" allow backspacing over everything in insert mode
+set backspace=indent,eol,start
+
+" set theme
+set t_Co=256
+set background=dark
+set encoding=utf-8
+colorscheme delek
+
+" show number lines the title of the window and the ruler
+set number
+set title
+set ruler
+
+" highlight current line
+"set cursorline
+
+" show color column at 80
+"set colorcolumn=80
+"highlight ColorColumn ctermbg=DarkBlue guibg=Black
+""""highlight ColorColumn ctermbg=LightRed guibg=Black
+""""call matchadd('ColorColumn', '\%>230v', 100)
+
+" disable swap files
+set nobackup
+set nowritebackup
+set noswapfile
+
+" highlight inc search
+set hlsearch
+set incsearch
+
+" lines longer than 80 columns will be broken
+"set textwidth=80
+" operation >> indents 4 columns; << unindents 4 columns
+set shiftwidth=2
+" an hard TAB displays as 4 columns
+set tabstop=2
+" insert spaces when hitting TABs
+set expandtab
+" insert/delete 4 spaces when hitting a TAB/BACKSPACE
+set softtabstop=2
+" round indent to multiple of 'shiftwidth'
+set shiftround
+" align the new line indent with the previous line
+set autoindent
+set foldmethod=indent
+" inside a method type 'za' to open and close a fold.
+set foldlevel=99
+"
+" Use system clipboard
+set clipboard=unnamed
+
+" --- PLUGINS ----
+" Remove trailing spaces
+highlight ExtraWhitespace ctermbg=red guibg=red
+match ExtraWhitespace /\s\+$/
+autocmd BufWritePre * :%s/\s\+$//e
+
+" vim-license
+" Add apache license to new python files
+"let g:licenses_copyright_holders_name = 'Red Hat, Inc.'
+"autocmd BufNewFile *.py :Apache
+
+" Flake8
+" run the Flake8 check every time you write a Python file
+autocmd BufWritePost *.py call Flake8()
+
+" yaml 2 space indent
+autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab
+autocmd FileType yml  setlocal ts=2 sts=2 sw=2 expandtab
+
+" Vim-Airline
+set laststatus=2
+let g:airline_powerline_fonts = 1
+let g:airline#extensions#tabline#enabled = 1
+let g:airline_theme='bubblegum'
+
+"vim-gitgutter
+let g:gitgutter_highlight_lines = 0
+let g:gitgutter_realtime = 1
+
+"vim-tagbar
+nnoremap <silent><F3> :TagbarToggle<CR>
+let g:tagbar_width = 30
+let g:tagbar_autoclose = 1
