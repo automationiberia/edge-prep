@@ -1,0 +1,17 @@
+# Install Collection
+
+mkdir -p collections/ansible_collections
+for file in collections-infra-osbuild/*.tar.gz; do
+  tar -xf "$file" -C collections/ansible_collections
+done
+
+# Create Inventory
+cat <<EOF > inventory
+[development]
+rhde-dev9.bcnconsulting.com ansible_connection=local
+
+[all:vars]
+ansible_user=pgoku
+EOF
+
+ansible-playbook infra.osbuild.osbuild_setup_server -i inventory -e 'rhc_state=absent'
