@@ -19,3 +19,48 @@ ansible_user=pgoku
 EOF
 
 ansible-playbook infra.osbuild.osbuild_setup_server -i inventory -e 'rhc_state=absent'
+
+## https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/interactively_installing_rhel_over_the_network/preparing-to-install-from-the-network-using-http_rhel-installer#configuring-the-http-server-for-http-boot_preparing-to-install-from-the-network-using-http
+#  Configuring the HTTP server for HTTP boot
+
+dnf install httpd
+mkdir -p /var/www/html/{ansible-content,iso,kickstarts,mnt,rhel84}
+curl -o /var/www/html/iso/rhel84.iso http://192.168.40.1/iso/rhel84.iso
+mount -o loop,ro -t iso9660 /var/www/html/iso/rhel84.iso /var/www/html/mnt/rhel84/
+
+# Copy images, EFI, isolinux only once
+rsync -av --progress /var/www/html/mnt/rhel84/EFI /var/www/html/rhel84/
+rsync -av --progress /var/www/html/mnt/rhel84/images /var/www/html/rhel84/
+rsync -av --progress /var/www/html/mnt/rhel84/isolinux /var/www/html/rhel84/
+
+
+# Modify GRUB LAPTOP
+
+# Make the boot loader configuration editable:
+chmod 644 /var/www/html/rhel84/EFI/BOOT/grub.cfg
+vim /var/www/html/rhel84/EFI/BOOT/grub.cfg
+### BEGIN /etc/grub.d/10_linux ###
+menuentry 'Install Red Hat Enterprise Linux 8.4' --class fedora --class gnu-linux --class gnu --class os {
+	linuxefi ../../images/pxeboot/vmlinuz inst.repo=http://192.168.40.1/rhel84 inst.ks=http://192.168.40.1/kickstarts/kickstart.ks quiet
+	initrdefi ../../images/pxeboot/initrd.img
+}
+
+# Make the EFI boot file executable:
+
+chmod 755 /var/www/html/rhel84/EFI/BOOT/BOOTX64.EFI
+
+# Open ports in the firewall to allow HTTP (80), DHCP (67, 68) and DHCPv6 (546, 547) traffic:
+
+firewall-cmd --zone public \
+               --add-port={80/tcp,67/udp,68/udp,546/udp,547/udp}
+firewall-cmd --reload
+
+Start the HTTP server:
+systemctl enable --now httpd
+
+# Make the html directory and its content readable and executable:
+chmod -cR u=rwX,g=rX,o=rX /var/www/html
+
+# Restore the SELinux context of the html directory:
+
+restorecon -FvvR /var/www/html
