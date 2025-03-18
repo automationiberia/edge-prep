@@ -1,5 +1,9 @@
 # Install Collection
 
+ansible-galaxy collection install --offline collections-download/*.tar.gz -p collections/
+
+# If it doesnt works, should be decompressed
+
 mkdir -p collections/ansible_collections
 for file in collections-infra-osbuild/*.tar.gz; do
   tar -xf "$file" -C collections/ansible_collections
