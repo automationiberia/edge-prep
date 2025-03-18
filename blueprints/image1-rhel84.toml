@@ -1,0 +1,75 @@
+name = "image1-rhel84"
+description = "Image1 RHEL8 OSTress BaseImage"
+version = "1.0.1"
+modules = []
+groups = []
+
+distro = "rhel-84"
+
+[[packages]]
+name = "podman"
+version = "*"
+
+[[packages]]
+name = "net-tools"
+version = "*"
+
+[[packages]]
+name = "bind-utils"
+version = "*"
+
+[[packages]]
+name = "vim"
+version = "*"
+
+[[packages]]
+name = "nmap"
+version = "*"
+
+[[packages]]
+name = "vim-enhanced"
+version = "*"
+
+[[packages]]
+name = "git"
+version = "*"
+
+[[packages]]
+name = "cockpit"
+version = "*"
+
+[[containers]]
+source = "rhde-dev9.bcnconsulting.com:5000/2048:prod"
+tls-verify = false
+
+[customizations]
+hostname = "baseimage1"
+
+[customizations.timezone]
+timezone = "Europe/Madrid"
+
+[[customizations.user]]
+name = "admin"
+password = "$6$"
+groups = ["users", "wheel"]
+
+[customizations.locale]
+languages = ["en_US.UTF-8"]
+keyboard = "es"
+
+[customizations.firewall.services]
+enabled = ["http", "https", "cockpit"]
+disabled = ["telnet"]
+
+[customizations.services]
+enabled = ["sshd", "cockpit.service"]
+disabled = ["postfix", "telnetd"]
+
+[[customizations.files]]
+path = "/etc/motd"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+Welcome to IMAGE1 Server!
+"""

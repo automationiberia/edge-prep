@@ -1,0 +1,70 @@
+name = "image2-rhel84"
+description = "Image2 RHEL8 OSTress BaseImage"
+version = "1.0.1"
+modules = []
+groups = []
+
+distro = "rhel-84"
+
+[[packages]]
+name = "podman"
+version = "*"
+
+[[packages]]
+name = "net-tools"
+version = "*"
+
+[[packages]]
+name = "bind-utils"
+version = "*"
+
+[[packages]]
+name = "vim"
+version = "*"
+
+[[packages]]
+name = "vim-enhanced"
+version = "*"
+
+[[packages]]
+name = "git"
+version = "*"
+
+[[packages]]
+name = "cockpit"
+version = "*"
+
+[[containers]]
+source = "rhde-dev9.bcnconsulting.com:5000/simple-http:prod"
+tls-verify = false
+
+[customizations]
+hostname = "baseimage2"
+
+[customizations.timezone]
+timezone = "Europe/Madrid"
+
+[[customizations.user]]
+name = "admin"
+password = "$6$"
+groups = ["users", "wheel"]
+
+[customizations.locale]
+languages = ["en_US.UTF-8"]
+keyboard = "es"
+
+[customizations.firewall.services]
+enabled = ["cockpit","ssh"]
+disabled = ["telnet"]
+
+[customizations.services]
+enabled = ["sshd", "cockpit.service"]
+
+[[customizations.files]]
+path = "/etc/motd"
+mode = "0644"
+user = "root"
+group = "root"
+data = """
+Welcome to IMAGE2 Server!
+"""
