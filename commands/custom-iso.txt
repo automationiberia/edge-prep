@@ -1,0 +1,68 @@
+ip=ip::gateway:netmask:hostname:interface:none
+ip=192.0.2.1::192.0.2.254:255.255.255.0:server.example.com:enp1s0:none
+
+
+mount -o loop laptop-rhel84.iso /mnt
+mkdir -p /tmp/rhel84/{ansible-content,container-images,kickstarts,DevicesGRUBs}
+cp -avRf /mnt/* /tmp/rhel84 && cd /tmp/rhel84
+
+cp container-os-images/f6cc6316-e11d-4cda-b938-1069a83c97a5-container-image1-rhel84-101.tar /tmp/rhel84/container-images/
+cp /home/pgoku/containers/2048.tar /tmp/rhel84/container-images/.
+cp /home/pgoku/containers/registry.tar /tmp/rhel84/container-images/.
+cp /home/pgoku/containers/simple-http.tar /tmp/rhel84/container-images/.
+
+cp kickstarts/laptop-iso.ks /tmp/rhel84/kickstarts/
+cp kickstarts/device-image1.ks /tmp/rhel84/kickstarts/
+cp kickstarts/device-image2.ks /tmp/rhel84/kickstarts/
+cp /var/www/html/kickstarts/laptop-iso.ks kickstarts/laptop-iso.ks
+
+cp -r /var/www/html/rhel84/GRUBs/ /tmp/rhel84/DevicesGRUBs
+
+
+Editamos el fichero de arranque de “isolinux/isolinux.cfg”
+
+
+
+
+cd /tmp/rhel84
+mkisofs -o /tmp/laptop-rhel84.iso -b isolinux/isolinux.bin -J -R -l -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e images/efiboot.img -no-emul-boot -graft-points -V "RHEL-8-4-0-BaseOS-x86_64" .
+
+xorriso 1.5.4 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:/tmp/laptop-rhel84.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data, 17.6g free
+xorriso : WARNING : -volid text is too long for Joliet (24 > 16)
+xorriso : WARNING : -volid text does not comply to ISO 9660 / ECMA 119 rules
+xorriso : UPDATE :   31800 files added in 1 seconds
+Added to ISO image: directory '/'='/tmp/rhel84'
+xorriso : UPDATE :   41714 files added in 1 seconds
+xorriso : UPDATE :   41714 files added in 1 seconds
+xorriso : UPDATE :  0.49% done
+xorriso : UPDATE :  18.45% done
+xorriso : UPDATE :  35.20% done, estimate finish Wed Mar 19 18:27:49 2025
+xorriso : UPDATE :  52.00% done, estimate finish Wed Mar 19 18:27:48 2025
+xorriso : UPDATE :  71.01% done, estimate finish Wed Mar 19 18:27:48 2025
+xorriso : UPDATE :  85.74% done
+xorriso : UPDATE :  85.74% done, estimate finish Wed Mar 19 18:27:50 2025
+xorriso : UPDATE :  85.74% done, estimate finish Wed Mar 19 18:27:51 2025
+xorriso : UPDATE :  85.74% done, estimate finish Wed Mar 19 18:27:52 2025
+xorriso : UPDATE :  91.54% done
+ISO image produced: 1882644 sectors
+Written to medium : 1882644 sectors at LBA 0
+Writing to 'stdio:/tmp/laptop-rhel84.iso' completed successfully
+
+isohybrid --uefi /tmp/laptop-rhel84.iso
+isohybrid: Warning: more than 1024 cylinders: 3678
+
+implantisomd5 /tmp/laptop-rhel84.iso
+Inserting md5sum into iso image...
+md5 = b5ba8c684565469759c58965211ed770
+Inserting fragment md5sums into iso image...
+fragmd5 = a419f79dd692716a6c62327aae83a1e268cd971efd3235179bd65871be23
+frags = 20
+Setting supported flag to 0
+
+
+rsync -avz -e "ssh -J pgoku@rhde-int" pgoku@192.168.30.2:/tmp/laptop-rhel84.iso .
