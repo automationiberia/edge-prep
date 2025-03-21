@@ -147,7 +147,7 @@ cat > /etc/systemd/system/container-httpd.service <<EOF
 Description=Podman container-httpd.service
 Documentation=man:podman-generate-systemd(1)
 Wants=network.target
-After=network-online.target
+After=network-online.target pre-pull-container-image.service
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
