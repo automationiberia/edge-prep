@@ -1,10 +1,18 @@
 name = "laptop-rhel84"
 description = "Laptop RHEL8 OSTress BaseImage"
-version = "1.0.13"
+version = "1.0.3"
 modules = []
 groups = []
 
 distro = "rhel-84"
+
+[[packages]]
+name = "ansible-core"
+version = "*"
+
+[[packages]]
+name = "glibc-langpack-en"
+version = "*"
 
 [[packages]]
 name = "podman"
@@ -15,11 +23,23 @@ name = "net-tools"
 version = "*"
 
 [[packages]]
+name = "bind-utils"
+version = "*"
+
+[[packages]]
+name = "vim"
+version = "*"
+
+[[packages]]
+name = "nmap"
+version = "*"
+
+[[packages]]
 name = "vim-enhanced"
 version = "*"
 
 [[packages]]
-name = "dhcp-server"
+name = "git"
 version = "*"
 
 [[packages]]
@@ -27,34 +47,41 @@ name = "httpd"
 version = "*"
 
 [[packages]]
+name = "dhcp-server"
+version = "*"
+
+[[packages]]
 name = "cockpit"
 version = "*"
 
-[[containers]]
-source = "rhde-dev9.bcnconsulting.com:5000/2048:prod"
-tls-verify = false
+[[packages]]
+name = "cockpit-podman"
+version = "*"
 
 [customizations]
-hostname = "baseimage"
+hostname = "baseimage-laptop"
 
 [customizations.timezone]
 timezone = "Europe/Madrid"
 
 [[customizations.user]]
 name = "admin"
-password = "$6$ixxxxxxxxYYYYYYYYzzzzzzZZ"
+password = "$6"
 groups = ["users", "wheel"]
 
 [customizations.locale]
 languages = ["en_US.UTF-8"]
 keyboard = "es"
 
+[customizations.firewall]
+ports = ["5000:tcp", "8080:tcp","8081:tcp","8082:tcp"]
+
 [customizations.firewall.services]
-enabled = ["http", "https", "dhcp"]
+enabled = ["http", "https", "dhcp","cockpit"]
 disabled = ["telnet"]
 
 [customizations.services]
-enabled = ["sshd", "cockpit.socket", "dhcpd"]
+enabled = ["sshd", "dhcpd", "httpd","cockpit.socket"]
 disabled = ["postfix", "telnetd"]
 
 [[customizations.files]]

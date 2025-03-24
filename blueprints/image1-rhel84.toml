@@ -1,6 +1,6 @@
 name = "image1-rhel84"
 description = "Image1 RHEL8 OSTress BaseImage"
-version = "1.0.1"
+version = "1.0.4"
 modules = []
 groups = []
 
@@ -38,9 +38,9 @@ version = "*"
 name = "cockpit"
 version = "*"
 
-[[containers]]
-source = "rhde-dev9.bcnconsulting.com:5000/2048:prod"
-tls-verify = false
+[[packages]]
+name = "cockpit-podman"
+version = "*"
 
 [customizations]
 hostname = "baseimage1"
@@ -61,8 +61,11 @@ keyboard = "es"
 enabled = ["http", "https", "cockpit"]
 disabled = ["telnet"]
 
+[customizations.firewall]
+ports = ["8080:tcp","8081:tcp","8082:tcp"]
+
 [customizations.services]
-enabled = ["sshd", "cockpit.service"]
+enabled = ["sshd", "cockpit.socket"]
 disabled = ["postfix", "telnetd"]
 
 [[customizations.files]]
