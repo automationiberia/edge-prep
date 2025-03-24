@@ -84,16 +84,6 @@ sync
 
 %post --log=/root/kickstart-post.log
 
-### Check if the installed system is RHEL 8.x or earlier ###
-if [ "$(rpm -E %{rhel})" -le 8 ]; then
-    # Check specifically if the version is RHEL 8.4 (or earlier)
-    # ISSUE - https://issues.redhat.com/browse/RHELPLAN-59465
-    # This check ensures the modification is only made for RHEL 8.4 systems
-    if [ "$(rpm -q --queryformat '%{VERSION}' redhat-release)" == "8.4" ]; then
-        sed -i '/pam_motd.so/ s/^session[ \t]*optional[ \t]*pam_motd.so/& motd=\/run\/motd.d\/boot-status/' /etc/pam.d/sshd
-    fi
-fi
-
 # Get container registry hostname
 REGISTRY_HOSTNAME=$(uname -n):5000
 echo "Container Registry Hostname: $REGISTRY_HOSTNAME"
