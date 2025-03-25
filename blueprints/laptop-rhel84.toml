@@ -1,6 +1,6 @@
 name = "laptop-rhel84"
 description = "Laptop RHEL8 OSTress BaseImage"
-version = "1.0.3"
+version = "1.0.5"
 modules = []
 groups = []
 
@@ -51,6 +51,26 @@ name = "dhcp-server"
 version = "*"
 
 [[packages]]
+name = "tftp-server"
+version = "*"
+
+[[packages]]
+name = "syslinux-tftpboot"
+version = "*"
+
+[[packages]]
+name = "syslinux"
+version = "*"
+
+[[packages]]
+name = "grub2-efi-x64"
+version = "*"
+
+[[packages]]
+name = "grub2-efi-x64-modules"
+version = "*"
+
+[[packages]]
 name = "cockpit"
 version = "*"
 
@@ -66,7 +86,7 @@ timezone = "Europe/Madrid"
 
 [[customizations.user]]
 name = "admin"
-password = "$6"
+password = "$6$"
 groups = ["users", "wheel"]
 
 [customizations.locale]
@@ -77,11 +97,11 @@ keyboard = "es"
 ports = ["5000:tcp", "8080:tcp","8081:tcp","8082:tcp"]
 
 [customizations.firewall.services]
-enabled = ["http", "https", "dhcp","cockpit"]
+enabled = ["http", "https", "dhcp","cockpit","tftp"]
 disabled = ["telnet"]
 
 [customizations.services]
-enabled = ["sshd", "dhcpd", "httpd","cockpit.socket"]
+enabled = ["sshd", "dhcpd", "httpd","cockpit.socket","tftp.socket"]
 disabled = ["postfix", "telnetd"]
 
 [[customizations.files]]

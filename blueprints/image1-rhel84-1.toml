@@ -1,6 +1,6 @@
 name = "image1-rhel84"
 description = "Image1 RHEL8 OSTress BaseImage"
-version = "1.0.5"
+version = "1.0.2"
 modules = []
 groups = []
 
@@ -23,10 +23,6 @@ name = "vim"
 version = "*"
 
 [[packages]]
-name = "nmap"
-version = "*"
-
-[[packages]]
 name = "vim-enhanced"
 version = "*"
 
@@ -39,7 +35,18 @@ name = "cockpit"
 version = "*"
 
 [[packages]]
-name = "cockpit-podman"
+name = "python3-pip"
+version = "*"
+[[packages]]
+name = "python3-inotify"
+version = "*"
+
+[[packages]]
+name = "zsh"
+version = "*"
+
+[[packages]]
+name = "mailx"
 version = "*"
 
 [customizations]
@@ -50,7 +57,7 @@ timezone = "Europe/Madrid"
 
 [[customizations.user]]
 name = "admin"
-password = "$6$Q"
+password = "$6$"
 groups = ["users", "wheel"]
 
 [customizations.locale]
@@ -61,11 +68,8 @@ keyboard = "es"
 enabled = ["http", "https", "cockpit"]
 disabled = ["telnet"]
 
-[customizations.firewall]
-ports = ["8080:tcp","8081:tcp","8082:tcp"]
-
 [customizations.services]
-enabled = ["sshd", "cockpit.socket"]
+enabled = ["sshd", "cockpit.service"]
 disabled = ["postfix", "telnetd"]
 
 [[customizations.files]]
