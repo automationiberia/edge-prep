@@ -172,7 +172,7 @@ enabled = ["http", "https", "dhcp","cockpit","tftp"]
 disabled = ["telnet"]
 
 [customizations.services]
-enabled = ["sshd", "dhcpd", "httpd","cockpit.socket","tftp.socket"]
+enabled = ["sshd", "dhcpd", "httpd","cockpit.socket","tftp.service"]
 disabled = ["postfix", "telnetd"]
 
 [[customizations.files]]
