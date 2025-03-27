@@ -1,9 +1,7 @@
 name = "laptop-rhel84"
 description = "Laptop RHEL8 OSTress BaseImage"
-version = "1.0.9"
+version = "1.0.17"
 modules = []
-groups = []
-
 distro = "rhel-84"
 
 [[packages]]
@@ -78,76 +76,17 @@ version = "*"
 name = "cockpit-podman"
 version = "*"
 
-#[[groups]]
-#name = "Server with GUI"
+[[packages]]
+name = "@GNOME"
 
 [[packages]]
-name = "gnome-shell"
-version = "*"
+name = "@base-x"
 
 [[packages]]
-name = "gnome-session"
-version = "*"
+name = "@Fonts"
 
 [[packages]]
-name = "gnome-control-center"
-version = "*"
-
-[[packages]]
-name = "gnome-terminal"
-version = "*"
-
-[[packages]]
-name = "xorg-x11-server-Xorg"
-version = "*"
-
-[[packages]]
-name = "gnome-settings-daemon"
-version = "*"
-
-[[packages]]
-name = "nm-connection-editor"
-version = "*"
-
-[[packages]]
-name = "gnome-software"
-version = "*"
-
-[[packages]]
-name = "gedit"
-version = "*"
-
-[[packages]]
-name = "evince"
-version = "*"
-
-[[packages]]
-name = "nautilus"
-version = "*"
-
-[[packages]]
-name = "google-noto-sans-fonts"
-version = "*"
-
-[[packages]]
-name = "google-noto-mono-fonts"
-version = "*"
-
-[[packages]]
-name = "google-noto-serif-fonts"
-version = "*"
-
-[[packages]]
-name = "fontconfig"
-version = "*"
-
-[[packages]]
-name = "xorg-x11-fonts-75dpi"
-version = "*"
-
-[[packages]]
-name = "xorg-x11-fonts-100dpi"
-version = "*"
+name = "@Internet Browser"
 
 [customizations]
 hostname = "baseimage-laptop"
