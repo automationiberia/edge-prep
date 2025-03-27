@@ -1,6 +1,6 @@
 name = "laptop-rhel84"
 description = "Laptop RHEL8 OSTress BaseImage"
-version = "1.0.5"
+version = "1.0.9"
 modules = []
 groups = []
 
@@ -78,6 +78,77 @@ version = "*"
 name = "cockpit-podman"
 version = "*"
 
+#[[groups]]
+#name = "Server with GUI"
+
+[[packages]]
+name = "gnome-shell"
+version = "*"
+
+[[packages]]
+name = "gnome-session"
+version = "*"
+
+[[packages]]
+name = "gnome-control-center"
+version = "*"
+
+[[packages]]
+name = "gnome-terminal"
+version = "*"
+
+[[packages]]
+name = "xorg-x11-server-Xorg"
+version = "*"
+
+[[packages]]
+name = "gnome-settings-daemon"
+version = "*"
+
+[[packages]]
+name = "nm-connection-editor"
+version = "*"
+
+[[packages]]
+name = "gnome-software"
+version = "*"
+
+[[packages]]
+name = "gedit"
+version = "*"
+
+[[packages]]
+name = "evince"
+version = "*"
+
+[[packages]]
+name = "nautilus"
+version = "*"
+
+[[packages]]
+name = "google-noto-sans-fonts"
+version = "*"
+
+[[packages]]
+name = "google-noto-mono-fonts"
+version = "*"
+
+[[packages]]
+name = "google-noto-serif-fonts"
+version = "*"
+
+[[packages]]
+name = "fontconfig"
+version = "*"
+
+[[packages]]
+name = "xorg-x11-fonts-75dpi"
+version = "*"
+
+[[packages]]
+name = "xorg-x11-fonts-100dpi"
+version = "*"
+
 [customizations]
 hostname = "baseimage-laptop"
 
@@ -86,7 +157,7 @@ timezone = "Europe/Madrid"
 
 [[customizations.user]]
 name = "admin"
-password = "$6$"
+password = "$6$Q4FN9N4qP1Yqfev1$F.ovvDXjb4M.Vw0kSyCPBZKqemA00A7fQBaEgan78pjGOd9wPkjeLG2FZXijx/PJ4JOY1BRWbcxnFvb3PtmQP0"
 groups = ["users", "wheel"]
 
 [customizations.locale]
