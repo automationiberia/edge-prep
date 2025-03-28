@@ -284,4 +284,13 @@ chmod -R 755 /var/lib/tftpboot/rhel84/
 restorecon -v -R /var/www/html/ > /dev/null 2>&1
 restorecon -v -R /var/lib/tftpboot/ > /dev/null 2>&1
 
+## Disable  gnome-initial-setup.service
+if grep -q "^InitialSetupEnable=" /etc/gdm/custom.conf; then
+    sed -i 's/^InitialSetupEnable=.*/InitialSetupEnable=false/' /etc/gdm/custom.conf
+elif grep -q "^\[daemon\]" /etc/gdm/custom.conf; then
+    sed -i '/^\[daemon\]/a InitialSetupEnable=false' /etc/gdm/custom.conf
+else
+    echo -e "\n[daemon]\nInitialSetupEnable=false" >> /etc/gdm/custom.conf
+fi
+
 %end
