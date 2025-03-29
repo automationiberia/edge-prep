@@ -1,0 +1,29 @@
+## $ cat /etc/redhat-release
+## Red Hat Enterprise Linux release 9.5 (Plow)
+###
+
+sudo subscription-manager repos --enable={rhel-9-for-x86_64-baseos-rpms,rhel-9-for-x86_64-appstream-rpms,ansible-developer-1.2-for-rhel-9-x86_64-rpms}
+sudo dnf install ansible-navigator ansible-builder ansible-core vim-enhanced vim nmap net-tools bind-utils git container-tools httpd
+
+sudo mkdir /var/www/html/{rpms-repo,mnt,iso,ansible-content,container-images}
+sudo chown -R apache  /var/www/html/rpms-repo
+sudo semanage fcontext -a -t httpd_sys_content_t "/var/www/html/(/.*)?"
+sudo restorecon -ir /var/www/html/
+sudo systemctl enable --now httpd.service
+sudo firewall-cmd --zone=public --add-service=http –add-service=http --permanent;sudo firewall-cmd --reload
+
+## Download the ISO and mounted at /var/www/html/iso/{{ rhel_iso_version }}.iso
+
+ansible-playbook download_iso.yaml -i local-inventory.yaml -e@download_iso_vars.yaml
+
+## Download Ansible Collection
+
+ansible-galaxy collection download infra.osbuild -p collections-download
+ansible-galaxy collection download containers.podman -p collections-download
+
+$ tar cvfz collections-ansible.tar.gz collections-download
+$ sudo mv collections-ansible.tar.gz ansible-content/collections-ansible.tar.gz
+
+podman save -o simple-http.tar quay.io/automationiberia/ot2024/simple-http:prod
+podman save -o 2048.tar quay.io/automationiberia/ot2024/2048:prod
+sudo mv *.tar /var/www/html/container-images

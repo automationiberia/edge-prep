@@ -1,0 +1,12 @@
+## $ cat /etc/redhat-release
+##   Red Hat Enterprise Linux release 8.4 (Ootpa)
+###
+## Sync Repo ansible-developer-1.1-for-rhel-8-x86_64-rpms
+sudo subscription-manager release --set=8.4
+sudo reposync --repoid=ansible-developer-1.2-for-rhel-8-x86_64-rpms --download-path=$PWD/repos/
+sudo dnf install --enablerepo ansible-developer-1.1-for-rhel-8-x86_64-rpms ansible-core
+sudo reposync --repoid=ansible-developer-1.1-for-rhel-8-x86_64-rpms --download-path=$PWD/repos/
+sudo reposync --download-metadata --repoid=ansible-developer-1.1-for-rhel-8-x86_64-rpms --download-path=$PWD/repos/
+ls -alrt repos/ansible-developer-1.1-for-rhel-8-x86_64-rpms/
+tar cvf - repos/ | gzip -v9 > repos.tar.gz
+scp repos.tar.gz pgoku@rhde-int:
