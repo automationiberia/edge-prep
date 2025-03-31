@@ -1,0 +1,38 @@
+[pgoku@rhde-int rhel8]$ ls | egrep -v 'i686|570.124.06'
+container-selinux-2.167.0-1.module+el8.4.0+12646+b6fd1bdf.noarch.rpm
+dnf-plugin-nvidia-2.0-1.el8.noarch.rpm
+egl-gbm-1.1.2-1.el8.x86_64.rpm
+egl-wayland-1.1.13.1-3.el8.x86_64.rpm
+egl-x11-1.0.1~20241213git61e70b0-1.el8.x86_64.rpm
+kmod-nvidia-470.161.03-4.18.0-425.3.1-470.161.03-3.el8.x86_64.rpm
+kmod-nvidia-latest-dkms-470.161.03-1.el8.x86_64.rpm
+libnvidia-container-tools-1.17.5-1.x86_64.rpm
+libnvidia-container1-1.17.5-1.x86_64.rpm
+libnvidia-nscq-470-470.161.03-1.x86_64.rpm
+nvidia-container-toolkit-1.17.5-1.x86_64.rpm
+nvidia-container-toolkit-base-1.17.5-1.x86_64.rpm
+nvidia-driver-470.161.03-1.el8.x86_64.rpm
+nvidia-driver-cuda-470.161.03-1.el8.x86_64.rpm
+nvidia-driver-cuda-libs-470.161.03-1.el8.x86_64.rpm
+nvidia-driver-libs-470.103.01-1.el8.x86_64.rpm
+nvidia-driver-libs-470.161.03-1.el8.x86_64.rpm
+nvidia-fabric-manager-470.161.03-1.x86_64.rpm
+nvidia-kmod-common-470.161.03-1.el8.noarch.rpm
+nvidia-modprobe-470.161.03-1.el8.x86_64.rpm
+nvidia-persistenced-470.161.03-1.el8.x86_64.rpm
+repodata
+[pgoku@rhde-int rhel8]$ cat /etc/yum.repos.d/nvidia.repo
+[nvidia-local]
+name=NVIDIA Local Repo
+baseurl=file:///var/www/html/nvidia-repo/
+enabled=1
+gpgcheck=0
+[pgoku@rhde-int rhel8]$ cat ~/repo-nvidia.toml
+id = "rh8-nvidia"
+name = "Drivers and packages for NVIDIA RHEL"
+type = "yum-baseurl"
+check_gpg = false
+check_ssl = false
+system = false
+url = "http://192.168.30.1/nvidia-repo/rhel8/"
+distros = ["rhel-8.4"]
