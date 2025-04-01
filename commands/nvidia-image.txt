@@ -8,6 +8,11 @@ $ sudo subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms
 $ sudo subscription-manager repos --enable=codeready-builder-for-rhel-8-x86_64-rpms
 $ sudo dnf config-manager --add-repo=https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo
 
+## https://access.redhat.com/solutions/238533 -  How to tie a system to a specific update of Red Hat Enterprise Linux?
+$ sudo subscription-manager release --list
+$ sudo subscription-manager release --set=8.4
+$ sudo yum clean all
+
 ## Choose driver updates to the specified driver branch (precompiled)
 ### Bear in mind that the precompiled driver are tight to a minimum kernel version.
 ### https://access.redhat.com/articles/3078 - Red Hat Enterprise Linux Release Dates
