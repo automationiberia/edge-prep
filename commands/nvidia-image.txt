@@ -16,11 +16,37 @@ $ sudo dnf config-manager --add-repo=https://developer.download.nvidia.com/compu
 $ sudo dnf module enable nvidia-driver:465
 
 #### DOWNLOAD packages needed
+#### The packe list should be taken from
+$ sudo dnf module install nvidia-driver:465
+Installing group/module packages:
+ nvidia-driver                                                     x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                  20 M
+ nvidia-driver-NVML                                                x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                 495 k
+ nvidia-driver-NvFBCOpenGL                                         x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                 113 k
+ nvidia-driver-cuda                                                x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                 322 k
+ nvidia-driver-cuda-libs                                           x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                  28 M
+ nvidia-driver-devel                                               x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                  12 k
+ nvidia-driver-libs                                                x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                 140 M
+ nvidia-kmod-common                                                noarch                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                  10 k
+ nvidia-libXNVCtrl                                                 x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                  51 k
+ nvidia-libXNVCtrl-devel                                           x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                  55 k
+ nvidia-modprobe                                                   x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                  74 k
+ nvidia-persistenced                                               x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                  98 k
+ nvidia-settings                                                   x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                 1.8 M
+ nvidia-xconfig                                                    x86_64                                  3:465.19.01-1.el8                                                          cuda-rhel8-x86_64                                                 262 k
+$ sudo dnf install container-selinux nvidia-container-toolkit
+Installing:
+ container-selinux                                              noarch                                  2:2.167.0-1.module+el8.4.0+12646+b6fd1bdf                                     rhel-8-for-x86_64-appstream-rpms                                   52 k
+ nvidia-container-toolkit
 $ mkdir nvidia-rpms
-$ tar cvf - nvidia-rpms/ | gzip -v9 > nvidia-rpms-localrepo.tar.gz
+
+
+
+### Then with dnf download *** --resolve will download also the dependecies
+
 $ sudo dnf download nvidia-driver nvidia-driver-NVML nvidia-driver-NvFBCOpenGL nvidia-driver-cuda nvidia-driver-cuda-libs nvidia-driver-devel nvidia-driver-libs nvidia-kmod-common nvidia-libXNVCtrl nvidia-libXNVCtrl-devel nvidia-modprobe nvidia-persistenced nvidia-settings nvidia-xconfig dconf container-selinux nvidia-container-toolkit --resolve
 
-### Copy to Yum Repository Server // Image Builder server
+### Compress and Copy to Yum Repository Server // OSBuilder server
+$ tar cvf - nvidia-rpms/ | gzip -v9 > nvidia-rpms-localrepo.tar.gz
 scp nvidia-rpms-localrepo.tar.gz admin@rhde-int:/tmp/.
 
 ##### Server OSBuilder #####
@@ -254,3 +280,4 @@ $ systemctl status nvidia-persistenced.service
 ● nvidia-persistenced.service - NVIDIA Persistence Daemon
    Loaded: loaded (/usr/lib/systemd/system/nvidia-persistenced.service; disabled; vendor preset: disabled)
    Active: inactive (dead)
+
