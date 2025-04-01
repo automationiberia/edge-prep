@@ -1,6 +1,6 @@
 name = "rhel84-nvidia"
 description = "Blueprint for Edge rhel84 and nvidia"
-version = "0.0.13"
+version = "0.0.2"
 modules = []
 groups = []
 distro = "rhel-8.4"
@@ -38,24 +38,68 @@ name = "git"
 version = "*"
 
 [[packages]]
-name = "nvidia-fabric-manager"
-version = "470.161.03"
-
-[[packages]]
-name = "libnvidia-nscq-470"
-version = "470.161.03"
+name = "container-selinux"
+version = "*"
 
 [[packages]]
 name = "nvidia-container-toolkit"
 version = "*"
 
 [[packages]]
-name = "container-selinux.noarch"
+name = "nvidia-driver"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-NVML"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-NvFBCOpenGL"
 version = "*"
 
 [[packages]]
 name = "nvidia-driver-cuda"
-version = "470.161.03"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-cuda-libs"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-devel"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-libs"
+version = "*"
+
+[[packages]]
+name = "nvidia-kmod-common"
+version = "*"
+
+[[packages]]
+name = "nvidia-libXNVCtrl"
+version = "*"
+
+[[packages]]
+name = "nvidia-libXNVCtrl-devel"
+version = "*"
+
+[[packages]]
+name = "nvidia-modprobe"
+version = "*"
+
+[[packages]]
+name = "nvidia-persistenced"
+version = "*"
+
+[[packages]]
+name = "nvidia-settings"
+version = "*"
+
+[[packages]]
+name = "nvidia-xconfig"
+version = "*"
 
 [customizations]
 hostname = "baseimage1"
@@ -68,4 +112,118 @@ groups = ["users", "wheel"]
 timezone = "Europe/Madrid"
 [customizations.locale]
 languages = ["en_US.UTF-8"]
-keyboard = "es"
+name = "rhel84-nvidia"
+description = "Blueprint for Edge rhel84 and nvidia"
+version = "0.0.2"
+modules = []
+groups = []
+distro = "rhel-8.4"
+
+[[packages]]
+name = "glibc-langpack-en"
+version = "*"
+
+[[packages]]
+name = "podman"
+version = "*"
+
+[[packages]]
+name = "net-tools"
+version = "*"
+
+[[packages]]
+name = "bind-utils"
+version = "*"
+
+[[packages]]
+name = "vim"
+version = "*"
+
+[[packages]]
+name = "nmap"
+version = "*"
+
+[[packages]]
+name = "vim-enhanced"
+version = "*"
+
+[[packages]]
+name = "git"
+version = "*"
+
+[[packages]]
+name = "container-selinux"
+version = "*"
+
+[[packages]]
+name = "nvidia-container-toolkit"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-NVML"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-NvFBCOpenGL"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-cuda"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-cuda-libs"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-devel"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-libs"
+version = "*"
+
+[[packages]]
+name = "nvidia-kmod-common"
+version = "*"
+
+[[packages]]
+name = "nvidia-libXNVCtrl"
+version = "*"
+
+[[packages]]
+name = "nvidia-libXNVCtrl-devel"
+version = "*"
+
+[[packages]]
+name = "nvidia-modprobe"
+version = "*"
+
+[[packages]]
+name = "nvidia-persistenced"
+version = "*"
+
+[[packages]]
+name = "nvidia-settings"
+version = "*"
+
+[[packages]]
+name = "nvidia-xconfig"
+version = "*"
+
+[customizations]
+hostname = "baseimage1"
+
+[[customizations.user]]
+name = "admin"
+password = "$6$Q4FN9N4qP1Yqfev1$F.ovvDXjb4M.Vw0kSyCPBZKqemA00A7fQBaEgan78pjGOd9wPkjeLG2FZXijx/PJ4JOY1BRWbcxnFvb3PtmQP0"
+groups = ["users", "wheel"]
+[customizations.timezone]
+timezone = "Europe/Madrid"
+[customizations.locale]
+languages = ["en_US.UTF-8"]
+keyboard = "eskeyboard = "es"

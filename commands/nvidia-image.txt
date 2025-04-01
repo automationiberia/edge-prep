@@ -1,0 +1,256 @@
+### https://developer.nvidia.com/blog/streamlining-nvidia-driver-deployment-on-rhel-8-with-modularity-streams/
+##### RHEL8 SERVER #####
+##### NEEDS INTERNET ACCESS #####
+##### Download the driver's rpms fix to a specific version #####
+
+$ sudo subscription-manager repos --enable=rhel-8-for-x86_64-appstream-rpms
+$ sudo subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms
+$ sudo subscription-manager repos --enable=codeready-builder-for-rhel-8-x86_64-rpms
+$ sudo dnf config-manager --add-repo=https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo
+
+## Choose driver updates to the specified driver branch (precompiled)
+### Bear in mind that the precompiled driver are tight to a minimum kernel version.
+### https://access.redhat.com/articles/3078 - Red Hat Enterprise Linux Release Dates
+#### RHEL 8.4	2021-05-18	2021-05-18 RHBA-2021:1569	4.18.0-305
+
+$ sudo dnf module enable nvidia-driver:465
+
+#### DOWNLOAD packages needed
+$ mkdir nvidia-rpms
+$ tar cvf - nvidia-rpms/ | gzip -v9 > nvidia-rpms-localrepo.tar.gz
+$ sudo dnf download nvidia-driver nvidia-driver-NVML nvidia-driver-NvFBCOpenGL nvidia-driver-cuda nvidia-driver-cuda-libs nvidia-driver-devel nvidia-driver-libs nvidia-kmod-common nvidia-libXNVCtrl nvidia-libXNVCtrl-devel nvidia-modprobe nvidia-persistenced nvidia-settings nvidia-xconfig dconf container-selinux nvidia-container-toolkit --resolve
+
+### Copy to Yum Repository Server // Image Builder server
+scp nvidia-rpms-localrepo.tar.gz admin@rhde-int:/tmp/.
+
+##### Server OSBuilder #####
+### Image builder must be configured with repos={rhel-8-for-x86_64-baseos-rpms,rhel-8-for-x86_64-appstream-rpms}
+### Apache server should be running to serve the rpms
+
+$ sudo dnf install httpd createrepo
+$ sudo mkdir -r /var/www/html/nvidia-repo/rhel8/
+$ sudo tar xvzf /tmp/nvidia-rpms-localrepo.tar.gz -C /var/www/html/nvidia-repo/rhel8/
+$ sudo mv /var/www/html/nvidia-repo/rhel8/nvidia-rpms/*rpm /var/www/html/nvidia-repo/rhel8/
+$ sudo rm -rf /var/www/html/nvidia-repo/rhel8/nvidia-rpms
+$ sudo createrepo /var/www/html/nvidia-repo/rhel8/
+$ sudo chown -R apache:apache /var/www/html/nvidia-repo/
+
+### Create local nvidia yum repo
+$ cat /etc/yum.repos.d/nvidia.repo
+[nvidia-local]
+name=NVIDIA Local Repo
+baseurl=file:///var/www/html/nvidia-repo/
+enabled=1
+gpgcheck=0
+
+### Add third-party sources to osbuilder
+$ cat repo-nvidia-local.toml
+id = "rh8-nvidia-local"
+name = "Drivers and packages for NVIDIA RHEL"
+type = "yum-baseurl"
+check_gpg = false
+check_ssl = false
+system = false
+url = "http://192.168.30.1/nvidia-repo/rhel8/"
+distros = ["rhel-8.4"]
+
+$ composer-cli sources add repo-nvidia-local.toml
+$ composer-cli sources list
+appstream
+baseos
+rh8-nvidia-local
+
+$ cat blueprints/rhel84-nvidia.toml
+name = "rhel84-nvidia"
+description = "Blueprint for Edge rhel84 and nvidia"
+version = "0.0.2"
+modules = []
+groups = []
+distro = "rhel-8.4"
+
+[[packages]]
+name = "glibc-langpack-en"
+version = "*"
+
+[[packages]]
+name = "podman"
+version = "*"
+
+[[packages]]
+name = "net-tools"
+version = "*"
+
+[[packages]]
+name = "bind-utils"
+version = "*"
+
+[[packages]]
+name = "vim"
+version = "*"
+
+[[packages]]
+name = "nmap"
+version = "*"
+
+[[packages]]
+name = "vim-enhanced"
+version = "*"
+
+[[packages]]
+name = "git"
+version = "*"
+
+[[packages]]
+name = "container-selinux"
+version = "*"
+
+[[packages]]
+name = "nvidia-container-toolkit"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-NVML"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-NvFBCOpenGL"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-cuda"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-cuda-libs"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-devel"
+version = "*"
+
+[[packages]]
+name = "nvidia-driver-libs"
+version = "*"
+
+[[packages]]
+name = "nvidia-kmod-common"
+version = "*"
+
+[[packages]]
+name = "nvidia-libXNVCtrl"
+version = "*"
+
+[[packages]]
+name = "nvidia-libXNVCtrl-devel"
+version = "*"
+
+[[packages]]
+name = "nvidia-modprobe"
+version = "*"
+
+[[packages]]
+name = "nvidia-persistenced"
+version = "*"
+
+[[packages]]
+name = "nvidia-settings"
+version = "*"
+
+[[packages]]
+name = "nvidia-xconfig"
+version = "*"
+
+[customizations]
+hostname = "baseimage1"
+
+[[customizations.user]]
+name = "admin"
+password = "$6$Q4FN9N4qP1Yqfev1$F.ovvDXjb4M.Vw0kSyCPBZKqemA00A7fQBaEgan78pjGOd9wPkjeLG2FZXijx/PJ4JOY1BRWbcxnFvb3PtmQP0"
+groups = ["users", "wheel"]
+[customizations.timezone]
+timezone = "Europe/Madrid"
+[customizations.locale]
+languages = ["en_US.UTF-8"]
+keyboard = "es"
+
+### Add the blueprint, check dependencies and build the image
+$ composer-cli blueprints push blueprints/rhel84-nvidia-complete.toml
+$ $ composer-cli blueprints depsolve rhel84-nvidia-complete | grep nvidia
+blueprint: rhel84-nvidia v0.0.2
+    dnf-plugin-nvidia-2.2-2.el8.noarch
+    3:kmod-nvidia-465.19.01-4.18.0-305-465.19.01-3.el8.x86_64
+    libnvidia-container-tools-1.17.5-1.x86_64
+    libnvidia-container1-1.17.5-1.x86_64
+    nvidia-container-toolkit-1.17.5-1.x86_64
+    nvidia-container-toolkit-base-1.17.5-1.x86_64
+    3:nvidia-driver-465.19.01-1.el8.x86_64
+    3:nvidia-driver-NVML-465.19.01-1.el8.x86_64
+    3:nvidia-driver-NvFBCOpenGL-465.19.01-1.el8.x86_64
+    3:nvidia-driver-cuda-465.19.01-1.el8.x86_64
+    3:nvidia-driver-cuda-libs-465.19.01-1.el8.x86_64
+    3:nvidia-driver-devel-465.19.01-1.el8.x86_64
+    3:nvidia-driver-libs-465.19.01-1.el8.x86_64
+    3:nvidia-kmod-common-465.19.01-1.el8.noarch
+    3:nvidia-libXNVCtrl-465.19.01-1.el8.x86_64
+    3:nvidia-libXNVCtrl-devel-465.19.01-1.el8.x86_64
+    3:nvidia-modprobe-465.19.01-1.el8.x86_64
+    3:nvidia-persistenced-465.19.01-1.el8.x86_64
+    3:nvidia-settings-465.19.01-1.el8.x86_64
+    3:nvidia-xconfig-465.19.01-1.el8.x86_64
+
+$ composer-cli compose start-ostree rhel84-nvidia-complete edge-containe
+$ composer-cli compose status
+ID                                     Status     Time                      Blueprint                Version   Type               Size
+123c9477-afe1-49b4-924e-c3e4f7a3c2b9   FINISHED   Tue Apr 1 16:14:23 2025   rhel84-nvidia-complete   0.0.2     edge-container
+
+## Copy to Latop
+$ scp 123c9477-afe1-49b4-924e-c3e4f7a3c2b9-container.tar  admin@192.168.122.82:/tmp/.
+
+## Tag image and run the image to serve the ostree repo
+$ podman tag 47047757d311 rhde-lptp.bcnconsulting.com:5000/nvidia-rhel84:1.0.2
+$ podman run -d --rm --name nvidia-rhel84 -p8082:8080 rhde-lptp.bcnconsulting.com:5000/nvidia-rhel84:1.0.2
+$ # podman ps -a
+CONTAINER ID  IMAGE                                                     COMMAND               CREATED         STATUS             PORTS                   NAMES
+b41ed40db48a  rhde-lptp.bcnconsulting.com:5000/library/registry:latest  /etc/docker/regis...  33 hours ago    Up 33 hours ago    0.0.0.0:5000->5000/tcp  container-registry
+622b1f3a986c  rhde-lptp.bcnconsulting.com:5000/image1-rhel84:prod       nginx -c /etc/ngi...  17 hours ago    Up 17 hours ago    0.0.0.0:8081->8080/tcp  image1-rhel84
+1dbbd6ac2ea1  rhde-lptp.bcnconsulting.com:5000/nvidia-rhel84:1.0.13     nginx -c /etc/ngi...  50 minutes ago  Up 50 minutes ago  0.0.0.0:8082->8080/tcp  nvidia-rhel84
+
+## Check packages installed
+### https://docs.nvidia.com/datacenter/cloud-native/edge/latest/nvidia-gpu-with-device-edge.html#introduction
+
+[admin@rhde-image1-bios ~]$ sudo ls
+[sudo] password for admin:
+[admin@rhde-image1-bios ~]$ sudo rpm -qa| grep nvidia
+nvidia-persistenced-465.19.01-1.el8.x86_64
+nvidia-driver-devel-465.19.01-1.el8.x86_64
+nvidia-driver-NvFBCOpenGL-465.19.01-1.el8.x86_64
+nvidia-driver-465.19.01-1.el8.x86_64
+nvidia-driver-cuda-libs-465.19.01-1.el8.x86_64
+libnvidia-container1-1.17.5-1.x86_64
+nvidia-driver-libs-465.19.01-1.el8.x86_64
+nvidia-driver-cuda-465.19.01-1.el8.x86_64
+nvidia-modprobe-465.19.01-1.el8.x86_64
+nvidia-xconfig-465.19.01-1.el8.x86_64
+nvidia-container-toolkit-1.17.5-1.x86_64
+nvidia-kmod-common-465.19.01-1.el8.noarch
+nvidia-driver-NVML-465.19.01-1.el8.x86_64
+nvidia-settings-465.19.01-1.el8.x86_64
+nvidia-container-toolkit-base-1.17.5-1.x86_64
+nvidia-libXNVCtrl-devel-465.19.01-1.el8.x86_64
+nvidia-libXNVCtrl-465.19.01-1.el8.x86_64
+libnvidia-container-tools-1.17.5-1.x86_64
+kmod-nvidia-465.19.01-4.18.0-305-465.19.01-3.el8.x86_64
+dnf-plugin-nvidia-2.2-2.el8.noarch
+[admin@rhde-image1-bios ~]$ nvidia-
+nvidia-bug-report.sh           nvidia-container-cli           nvidia-container-runtime-hook  nvidia-ctk                     nvidia-cuda-mps-server         nvidia-modprobe                nvidia-settings                nvidia-xconfig
+nvidia-cdi-hook                nvidia-container-runtime       nvidia-container-toolkit       nvidia-cuda-mps-control        nvidia-debugdump               nvidia-persistenced            nvidia-smi
+[admin@rhde-image1-bios ~]$ nvidia-smi
+NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running.
+$ systemctl status nvidia-persistenced.service
+● nvidia-persistenced.service - NVIDIA Persistence Daemon
+   Loaded: loaded (/usr/lib/systemd/system/nvidia-persistenced.service; disabled; vendor preset: disabled)
+   Active: inactive (dead)
