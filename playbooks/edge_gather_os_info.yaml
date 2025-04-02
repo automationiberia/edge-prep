@@ -1,0 +1,67 @@
+---
+- name: Fetch and parse rpm-ostree status
+  hosts: all
+  gather_facts: no
+  vars:
+    image_nickname_map:
+      "2f6b6b63ec593e57f347c88441c3bd1d53fce8d00a55970d6a6925f829f589f9":
+        name: "nvidia-rhel84"
+        version: "1.0.13"
+      "b9977f00f3deea467478a7de7e22b024e057b8ad45207f7b6aa42f1c0659bb3e":
+        name: "image1-rhel84"
+        version: "1.0.2"
+      "d75a5aa049371087bb6fd0ac9be2e1ae6985b1c327985998d426f89c42aec4de":
+        name: "image1-rhel84"
+        version: "1.0.5"
+
+  tasks:
+
+    - name: Get rpm-ostree status as JSON
+      command: rpm-ostree status --json
+      register: ostree_output
+      changed_when: false
+
+    - name: Parse JSON output
+      set_fact:
+        deployments: "{{ ostree_output.stdout | from_json }}"
+
+    - name: Extract deployment data with image_nicer_name
+      set_fact:
+        deployments_list: []
+
+    - name: Append each deployment with image nickname
+      set_fact:
+        deployments_list: >-
+          {{ deployments_list + [
+            {
+              'id': item.id,
+              'osname': item.osname,
+              'version': item.version,
+              'checksum': item.checksum,
+              'booted': item.booted,
+              'pinned': item.pinned,
+              'origin': item.origin,
+              'timestamp': item.timestamp,
+              'image_nicer_name': image_nickname_map[item.checksum]['name'] | default('Unknown'),
+              'image_nicer_version': image_nickname_map[item.checksum]['version'] | default('Unknown')
+            }
+          ] }}
+      loop: "{{ deployments.deployments }}"
+
+    - name: Create host-specific deployment data structure
+      set_fact:
+        ostree_deployments:
+          "ostree_list_deployments": "{{ deployments_list }}"
+
+    - name: Save deployment data to YAML file on the control node
+      copy:
+        content: |
+          {{ ostree_deployments | to_nice_yaml }}
+        dest: "/tmp/rpm_ostree_status_{{ inventory_hostname }}.yml"
+        mode: "0644"
+      delegate_to: localhost
+
+    - name: Display the file path
+      debug:
+        msg: "Deployment data saved to /tmp/rpm_ostree_status_{{ inventory_hostname }}.yml on the control node."
+
