@@ -7,7 +7,7 @@
       "2f6b6b63ec593e57f347c88441c3bd1d53fce8d00a55970d6a6925f829f589f9":
         name: "nvidia-rhel84"
         version: "1.0.13"
-      "b9977f00f3deea467478a7de7e22b024e057b8ad45207f7b6aa42f1c0659bb3e":
+      "62cc7845e1b6c2c6f62119f92cf630cab2e5e290177bad5c8a59e0eea1b14ab1":
         name: "image1-rhel84"
         version: "1.0.2"
       "d75a5aa049371087bb6fd0ac9be2e1ae6985b1c327985998d426f89c42aec4de":
@@ -48,20 +48,29 @@
           ] }}
       loop: "{{ deployments.deployments }}"
 
-    - name: Create host-specific deployment data structure
+    - name: Store host-specific data in hostvars
       set_fact:
-        ostree_deployments:
-          "ostree_list_deployments": "{{ deployments_list }}"
+        ostree_host_data:
+          "{{ { inventory_hostname: { 'ostree_list_deployments': deployments_list } } }}"
 
-    - name: Save deployment data to YAML file on the control node
+- name: Merge deployment data from all hosts
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+    - name: Collect all deployment data
+      set_fact:
+        merged_ostree_data: "{{ merged_ostree_data | default({}) | combine(hostvars[item].ostree_host_data) }}"
+      loop: "{{ groups['all'] }}"
+      when: "'ostree_host_data' in hostvars[item]"
+
+    - name: Save merged deployment data to YAML file
       copy:
-        content: |
-          {{ ostree_deployments | to_nice_yaml }}
-        dest: "/tmp/rpm_ostree_status_{{ inventory_hostname }}.yml"
+        content: "{{ merged_ostree_data | to_nice_yaml }}"
+        dest: "/tmp/rpm_ostree_status.yml"
         mode: "0644"
-      delegate_to: localhost
 
     - name: Display the file path
       debug:
-        msg: "Deployment data saved to /tmp/rpm_ostree_status_{{ inventory_hostname }}.yml on the control node."
+        msg: "Merged deployment data saved to /tmp/rpm_ostree_status.yml on the control node."
 
