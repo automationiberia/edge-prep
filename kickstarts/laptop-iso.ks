@@ -1,4 +1,3 @@
-# network --bootproto=dhcp --onboot=true
 keyboard --xlayouts='es'
 lang en_US.UTF-8
 timezone "Europe/Madrid"
@@ -8,10 +7,7 @@ clearpart --all --initlabel
 autopart --type=plain --fstype=xfs --nohome
 reboot
 graphical
-#user --name=ansible --groups=wheel --password='redhat00'
-#rootpw --plaintext --lock 'redhat00'
 services --enabled=ostree-remount
-# ostreesetup --nogpg --url=http://192.168.40.1:8080/repo --osname=rhel --ref=rhel/8/x86_64/edge
 ostreesetup --osname="rhel" --remote="rhel" --url="file:///run/install/repo/ostree/repo" --ref="rhel/8/x86_64/edge" --nogpg
 
 %pre --log=/mnt/sysroot/root/kickstart-pre.log
@@ -27,50 +23,53 @@ fi
 %post --nochroot --log=/mnt/sysroot/root/kickstart-post-nonchroot.log
 set -x
 
-#### DEBUG POST NOCHROOT ####
-mount | grep install
-ls -l /run/install/repo/
-ls -l /mnt/source/
-#### DEBUG POST NOCHROOT ####
+# Define device images
+device_images="device-image1 device-image2"
 
-# Create Directory structure in the new root filesystem
+# Create directory structure in the new root filesystem
 mkdir -p /mnt/sysroot/root/{ansible-content,container-images}
 mkdir -p /mnt/sysroot/var/www/html/{rhel84,DevicesGRUBs}
-mkdir -p /mnt/sysroot/var/www/html/rhel84/{device-image1,device-image2}
 mkdir -p /mnt/sysroot/var/lib/tftpboot/{rhel84,pxelinux,ipxe,tmp}
-mkdir -p /mnt/sysroot/var/lib/tftpboot/rhel84/{images,device-image1,device-image2}
+mkdir -p /mnt/sysroot/var/lib/tftpboot/rhel84/images
 
-# Copy Ansible Content, Container Images, files
+# Create directories for each device image
+for image in $device_images; do
+    mkdir -p /mnt/sysroot/var/www/html/rhel84/${image}
+    mkdir -p /mnt/sysroot/var/lib/tftpboot/rhel84/${image}
+done
+
+# Copy Ansible content, container images, vimrc, and RPMs
 rsync -av --progress /run/install/repo/ansible-content /mnt/sysroot/root/
 rsync -av --progress /run/install/repo/container-images /mnt/sysroot/root/
 rsync -av --progress /run/install/repo/files/vimrc /mnt/sysroot/root/.vimrc
 rsync -av --progress /run/install/repo/rpms /mnt/sysroot/root/
 
-# Copy images, EFI, isolinux HTTPBOOT
+# Copy HTTPBOOT resources (EFI, GRUB, isolinux, images)
 rsync -av --progress /run/install/repo/EFI /mnt/sysroot/var/www/html/rhel84/
 rsync -av --progress /mnt/sysroot/usr/lib/grub/x86_64-efi /mnt/sysroot/var/www/html/EFI/BOOT/
-rsync -av --progress /run/install/repo/EFI /mnt/sysroot/var/www/html/rhel84/device-image1/
-rsync -av --progress /mnt/sysroot/usr/lib/grub/x86_64-efi /mnt/sysroot/var/www/html/rhel84/device-image1/EFI/BOOT/
-rsync -av --progress /run/install/repo/EFI /mnt/sysroot/var/www/html/rhel84/device-image2/
-rsync -av --progress /mnt/sysroot/usr/lib/grub/x86_64-efi /mnt/sysroot/var/www/html/rhel84/device-image2/EFI/BOOT/
 rsync -av --progress /run/install/repo/images /mnt/sysroot/var/www/html/rhel84/
 rsync -av --progress /run/install/repo/isolinux /mnt/sysroot/var/www/html/rhel84/
 
-# Copy Devices Customized Grub HTTPBOOT
-rsync -av --progress /run/install/repo/DevicesGRUBs/grub-httpboot.cfg /mnt/sysroot/var/www/html/rhel84/EFI/BOOT/grub.cfg
-rsync -av --progress /run/install/repo/DevicesGRUBs/grub-httpboot-image1.cfg /mnt/sysroot/var/www/html/rhel84/device-image1/EFI/BOOT/grub.cfg
-rsync -av --progress /run/install/repo/DevicesGRUBs/grub-httpboot-image2.cfg /mnt/sysroot/var/www/html/rhel84/device-image2/EFI/BOOT/grub.cfg
+# Copy HTTPBOOT GRUB configs and EFI to each device image
+for image in $device_images; do
+    rsync -av --progress /run/install/repo/EFI /mnt/sysroot/var/www/html/rhel84/${image}/
+    rsync -av --progress /mnt/sysroot/usr/lib/grub/x86_64-efi /mnt/sysroot/var/www/html/rhel84/${image}/EFI/BOOT/
+    rsync -av --progress /run/install/repo/DevicesGRUBs/grub-httpboot-${image}.cfg /mnt/sysroot/var/www/html/rhel84/${image}/EFI/BOOT/grub.cfg
+done
 
-# Copy images, EFI, isolinux iPXE-TFTP
+# Copy iPXE-TFTP resources
 rsync -av --progress /run/install/repo/EFI /mnt/sysroot/var/lib/tftpboot/rhel84
-rsync -av --progress /run/install/repo/EFI /mnt/sysroot/var/lib/tftpboot/rhel84/device-image1
-rsync -av --progress /run/install/repo/EFI /mnt/sysroot/var/lib/tftpboot/rhel84/device-image2
 rsync -av --progress /run/install/repo/images/pxeboot/ /mnt/sysroot/var/lib/tftpboot/rhel84/images
 
-# Copy Devices Customized Grub iPXE-TFTP
+# Copy iPXE GRUB configs and EFI to each device image
+for image in $device_images; do
+    rsync -av --progress /run/install/repo/EFI /mnt/sysroot/var/lib/tftpboot/rhel84/${image}/
+    rsync -av --progress /run/install/repo/DevicesGRUBs/grub-ipxe-tftp-${image}.cfg /mnt/sysroot/var/lib/tftpboot/rhel84/${image}/EFI/BOOT/grub.cfg
+done
+
+# Copy common iPXE and HTTPBOOT GRUB configs
+rsync -av --progress /run/install/repo/DevicesGRUBs/grub-httpboot.cfg /mnt/sysroot/var/www/html/rhel84/EFI/BOOT/grub.cfg
 rsync -av --progress /run/install/repo/DevicesGRUBs/grub-ipxe-tftp.cfg /mnt/sysroot/var/lib/tftpboot/rhel84/EFI/BOOT/grub.cfg
-rsync -av --progress /run/install/repo/DevicesGRUBs/grub-ipxe-tftp-image1.cfg /mnt/sysroot/var/lib/tftpboot/rhel84/device-image1/EFI/BOOT/grub.cfg
-rsync -av --progress /run/install/repo/DevicesGRUBs/grub-ipxe-tftp-image2.cfg /mnt/sysroot/var/lib/tftpboot/rhel84/device-image2/EFI/BOOT/grub.cfg
 
 # Download kickstarts
 rsync -av --progress /run/install/repo/kickstarts /mnt/sysroot/var/www/html/
@@ -115,8 +114,6 @@ restorecon -v /mnt/sysroot/var/lib/dhcpd/dhcpd.leases
 
 # It works NetworkManager to version 1.39 or above - https://access.redhat.com/solutions/7055398
 # nmcli connection migrate; nmcli -f name,filename connection show
-
-# ping -c 4 192.168.40.1
 
 sync
 
@@ -258,20 +255,6 @@ EOF
 
 # Enable the Podman auto-update systemd timer to check periodically:
 systemctl enable --now podman-auto-update.timer
-
-######## DEBUG POST ########
-
-echo ls -l /; ls -l /
-echo ls -l /root; ls -l /root
-echo ls -l /run/; ls -l /run/
-echo ls -l /run/media; ls -l /run/media
-echo ls -l /run/mount; ls -l /run/mount
-echo ls -l /run/install/repo; ls -l /run/install/repo
-echo ls -l /mnt/;ls -l /mnt/
-echo ls -l /mnt/source/;ls -l /mnt/source/
-find / -name laptop-iso.ks
-
-######## DEBUG POST ########
 
 # Apache ownership
 chown apache:apache -R /var/www/html/
