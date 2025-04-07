@@ -171,7 +171,7 @@ podman images
 # Let use local registry as insecure
 cat > /etc/containers/registries.conf.d/local-reg-insecure.conf <<EOF
 [[registry]]
-location="rhde-lptp.bcnconsulting.com:5000"
+location="$(uname -n):5000"
 insecure=true
 EOF
 
