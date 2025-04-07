@@ -44,6 +44,28 @@ Installing:
  nvidia-container-toolkit
 $ mkdir nvidia-rpms
 
+Get the package list of the nvidia-container-toolkit, which are not in a module stream:
+
+[source,bash]
+----
+# sudo dnf install container-selinux nvidia-container-toolkit and get the packages from Installing:
+$ sudo dnf install container-selinux nvidia-container-toolkit --assumeno | \
+awk '/^Installing:|^Installing dependencies:/,/^Enabling module streams:/' | \
+awk 'NF && $1 !~ /^(Installing|Enabling)/ { print $1 }' | \
+xargs sudo dnf download --resolve
+----
+
+Get the package list of the NVIDIA driver version 465:
+
+[source,bash]
+----
+# sudo dnf module install nvidia-driver:465 and get the packages from Installing group\/module packages and Installing weak dependencie
+$ sudo dnf module install nvidia-driver:465 --assumeno | \
+awk '/^Installing group\/module packages:/,/^Installing dependencies:/ { if ($1 !~ /^(Installing|$)/) print $1 }
+     /^Installing weak dependencies:/,/^Installing module profiles:/ { if ($1 !~ /^(Installing|$)/) print $1 }' | \
+xargs sudo dnf download --resolve
+----
+
 
 
 ### Then with dnf download *** --resolve will download also the dependecies
