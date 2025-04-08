@@ -205,11 +205,26 @@ EOF
 ## Enable the service
 systemctl enable container-registry.service
 
-cat > /etc/systemd/system/container-image1-rhel84.service <<EOF
-# container-image1-rhel84.service
+### Create image systemd services
+# Define container images names
+systemd_images_name=("image1-rhel84" "image2-rhel84")
+
+# Get hostname now
+systemd_hostname=$(uname -n)
+
+# Starting host port
+systemd_start_port=8081
+
+# Create systemd service for each container image
+for i in "${!systemd_images_name[@]}"; do
+  image="${systemd_images_name[$i]}"
+  port=$((systemd_start_port + i))
+
+  cat > "/etc/systemd/system/container-${image}.service" <<EOF
+# container-${image}.service
 
 [Unit]
-Description=Podman container-image1-rhel84.service
+Description=Podman container-${image}.service
 Documentation=man:podman-generate-systemd(1)
 Wants=network.target
 After=network-online.target
@@ -218,40 +233,18 @@ After=network-online.target
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 TimeoutStopSec=70
-ExecStartPre=/bin/rm -f %t/container-image1-rhel84.pid %t/container-image1-rhel84.ctr-id
-ExecStart=/usr/bin/podman run --conmon-pidfile %t/container-image1-rhel84.pid --cidfile %t/container-image1-rhel84.ctr-id --cgroups=no-conmon --replace -d --rm --name image1-rhel84 --label io.containers.autoupdate=image -p8081:8080 $(uname -n):5000/image1-rhel84:prod
-ExecStop=/usr/bin/podman stop --ignore --cidfile %t/container-image1-rhel84.ctr-id -t 10
-ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/container-image1-rhel84.ctr-id
-PIDFile=%t/container-image1-rhel84.pid
+ExecStartPre=/bin/rm -f %t/container-${image}.pid %t/container-${image}.ctr-id
+ExecStart=/usr/bin/podman run --conmon-pidfile %t/container-${image}.pid --cidfile %t/container-${image}.ctr-id --cgroups=no-conmon --replace -d --rm --name ${image} --label io.containers.autoupdate=image -p${port}:8080 ${systemd_hostname}:5000/${image}:prod
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/container-${image}.ctr-id -t 10
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/container-${image}.ctr-id
+PIDFile=%t/container-${image}.pid
 Type=forking
 
 [Install]
 WantedBy=multi-user.target default.target
 EOF
 
-cat > /etc/systemd/system/container-image2-rhel84.service <<EOF
-# container-image2-rhel84.service
-
-[Unit]
-Description=Podman container-image2-rhel84.service
-Documentation=man:podman-generate-systemd(1)
-Wants=network.target
-After=network-online.target
-
-[Service]
-Environment=PODMAN_SYSTEMD_UNIT=%n
-Restart=on-failure
-TimeoutStopSec=70
-ExecStartPre=/bin/rm -f %t/container-image2-rhel84.pid %t/container-image2-rhel84.ctr-id
-ExecStart=/usr/bin/podman run --conmon-pidfile %t/container-image1-rhel84.pid --cidfile %t/container-image1-rhel84.ctr-id --cgroups=no-conmon --replace -d --rm --name image1-rhel84 --label io.containers.autoupdate=image -p8082:8080 $(uname -n):5000/image2-rhel84:prod
-ExecStop=/usr/bin/podman stop --ignore --cidfile %t/container-image2-rhel84.ctr-id -t 10
-ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/container-image2-rhel84.ctr-id
-PIDFile=%t/container-image2-rhel84.pid
-Type=forking
-
-[Install]
-WantedBy=multi-user.target default.target
-EOF
+done
 
 # Enable the Podman auto-update systemd timer to check periodically:
 systemctl enable --now podman-auto-update.timer
